@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Chá de Panela · Débora &amp; Matheus</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Great+Vibes&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sand: { 50: '#FFFDFA', 100: '#FBF8F3', 200: '#F4EFE7', 300: '#EDE6DA', 400: '#E2D8C9', 500: '#C7BCAB', 600: '#8C8073', 700: '#6B5D4E', 800: '#493E33', 900: '#2C251F' },
+            sage: { 50: '#F6F7F3', 100: '#EAEEE0', 200: '#D6DEC4', 300: '#B8C49F', 400: '#969E78', 500: '#73795B', 600: '#5F6549', 700: '#565B43', 800: '#4E5B36', 900: '#353E24' },
+            terracotta: { 100: '#FDF1EC', 500: '#D97757', 600: '#A9573F', 700: '#8C4832' }
+          },
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            script: ['"Great Vibes"', 'cursive'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          boxShadow: {
+            soft: '0 4px 20px -2px rgba(73, 62, 51, 0.05)',
+            card: '0 8px 30px -4px rgba(73, 62, 51, 0.08)',
+            floating: '0 20px 40px -6px rgba(73, 62, 51, 0.12)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #F4EFE7;
+      color: #493E33;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .custom-scroll::-webkit-scrollbar { height: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #C7BCAB; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sage-200">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="border-b border-[#E2D8C9] bg-[#FBF8F3]/95 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" onclick="showSection('home')" class="flex items-center gap-2.5 sm:gap-3 group min-h-[44px]">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#EAEEE0] text-[#73795B] flex items-center justify-center border border-[#969E78]/30 group-hover:bg-[#D6DEC4] transition-colors flex-shrink-0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 21c0-5 3-9 8-10-1 6-4 9-8 10Z"></path>
+            <path d="M12 21c0-5-3-9-8-10 1 6 4 9 8 10Z"></path>
+            <path d="M12 21V9"></path>
+            <path d="M12 9c0-3 2-5 5-6-1 4-2 6-5 6Z"></path>
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-serif font-medium text-[#493E33] text-base sm:text-lg tracking-tight block leading-tight">
+            Chá de Panela
+          </span>
+          <span class="font-script text-[#73795B] text-xs sm:text-sm leading-none block">
+            Débora &amp; Matheus
+          </span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-7 text-sm">
+        <button onclick="showSection('home')" id="nav-home" class="font-medium text-[#565B43] border-b-2 border-[#73795B] font-semibold pb-1 min-h-[44px] flex items-center">Início</button>
+        <button onclick="showSection('catalog')" id="nav-catalog" class="font-medium text-[#6B5D4E] hover:text-[#493E33] pb-1 min-h-[44px] flex items-center">Lista de Presentes</button>
+        <button onclick="showSection('my-gifts')" id="nav-my-gifts" class="font-medium text-[#6B5D4E] hover:text-[#493E33] pb-1 min-h-[44px] flex items-center">Meus Presentes</button>
+        <button onclick="showSection('admin')" id="nav-admin" class="font-medium text-[#73795B] font-semibold bg-[#EAEEE0] px-3 py-1.5 rounded-[8px] border border-[#969E78]/30 hover:bg-[#D6DEC4] min-h-[38px] flex items-center">Painel dos Noivos</button>
+      </nav>
+
+      <!-- User Auth State -->
+      <div class="hidden md:flex items-center gap-3">
+        <div id="user-logged-in" class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-full bg-[#EAEEE0] text-[#73795B] text-xs font-bold flex items-center justify-center border border-[#C7BCAB]">M</span>
+            <span class="text-xs font-medium text-[#493E33]">Matheus</span>
+          </div>
+          <button onclick="toggleLogin()" class="px-3.5 py-2 rounded-[8px] bg-[#EDE6DA] hover:bg-[#E2D8C9] text-[#6B5D4E] text-xs font-medium min-h-[40px]">Sair</button>
+        </div>
+        <div id="user-logged-out" class="hidden items-center gap-2.5">
+          <button onclick="toggleLogin()" class="px-4 py-2 rounded-[10px] bg-[#FFFDFA] hover:bg-[#EDE6DA] border border-[#C7BCAB] text-[#493E33] text-xs font-medium flex items-center gap-2 shadow-soft min-h-[40px]">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.4 0 15.2c0 2.8.7 5.5 1.9 7.9l3.7-2.9z"/><path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16.5C3.7 20.2 7.5 23.5 12 23.5z"/></svg>
+            Entrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Button -->
+      <div class="md:hidden flex items-center gap-2">
+        <button onclick="toggleMobileMenu()" class="w-11 h-11 flex items-center justify-center rounded-[8px] text-[#493E33] hover:bg-[#EDE6DA]">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-[#E2D8C9] bg-[#FBF8F3] px-4 py-5 space-y-3">
+      <button onclick="showSection('home')" class="w-full text-left flex items-center h-12 px-3 rounded-[8px] text-base font-medium text-[#493E33] hover:bg-[#EDEFE4]">Início</button>
+      <button onclick="showSection('catalog')" class="w-full text-left flex items-center h-12 px-3 rounded-[8px] text-base font-medium text-[#493E33] hover:bg-[#EDEFE4]">Lista de Presentes</button>
+      <button onclick="showSection('my-gifts')" class="w-full text-left flex items-center h-12 px-3 rounded-[8px] text-base font-medium text-[#493E33] hover:bg-[#EDEFE4]">Meus Presentes</button>
+      <button onclick="showSection('admin')" class="w-full text-left flex items-center h-12 px-3 rounded-[8px] text-base font-medium text-[#73795B] bg-[#EAEEE0] font-semibold">Painel dos Noivos</button>
+    </div>
+  </header>
+
+  <!-- ==================== SECTION: HOME ==================== -->
+  <main id="section-home" class="flex-1 space-y-12 sm:space-y-20 pb-16 sm:pb-20">
+    <!-- Hero -->
+    <section class="relative pt-8 sm:pt-16 pb-8 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center space-y-5">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EAEEE0] border border-[#969E78]/30 text-[#5F6549] text-xs uppercase tracking-widest font-medium">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 21c0-5 3-9 8-10-1 6-4 9-8 10Z"></path>
+          <path d="M12 21c0-5-3-9-8-10 1 6 4 9 8 10Z"></path>
+          <path d="M12 21V9"></path>
+        </svg>
+        Chá de Panela
+      </div>
+
+      <h1 class="font-serif font-light text-4xl sm:text-6xl md:text-7xl text-[#493E33] tracking-tight leading-[1.08]">
+        Débora &amp; Matheus
+      </h1>
+
+      <p class="font-script text-2xl sm:text-3xl md:text-4xl text-[#73795B] leading-tight">
+        um novo lar começa aqui
+      </p>
+
+      <p class="text-sm sm:text-base text-[#6B5D4E] max-w-md sm:max-w-xl mx-auto leading-relaxed px-2">
+        Estamos muito felizes em celebrar este novo começo com as pessoas que mais amamos. Preparamos uma lista especial de presentes para a nossa casa.
+      </p>
+
+      <div class="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-sm sm:max-w-none mx-auto">
+        <button onclick="showSection('catalog')" class="w-full sm:w-auto min-h-[48px] px-8 py-3.5 rounded-[12px] bg-[#6B7154] hover:bg-[#565B43] text-[#FBF8F3] text-sm font-medium tracking-wide shadow-soft flex items-center justify-center transition-all">
+          Ver Lista de Presentes →
+        </button>
+        <button onclick="showSection('my-gifts')" class="w-full sm:w-auto min-h-[48px] px-6 py-3.5 rounded-[12px] bg-[#FBF8F3] hover:bg-[#EDE6DA] text-[#493E33] border border-[#C7BCAB] text-sm font-medium flex items-center justify-center transition-colors">
+          Meus Presentes Escolhidos
+        </button>
+      </div>
+    </section>
+
+    <!-- Details Card -->
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-[#FBF8F3] rounded-[16px] sm:rounded-[20px] border border-[#E2D8C9] p-5 sm:p-8 md:p-10 shadow-soft space-y-6">
+        <div class="text-center space-y-1">
+          <span class="text-xs uppercase tracking-widest text-[#73795B] font-medium">Encontro Especial</span>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-serif font-normal text-[#493E33]">Detalhes do Chá de Panela</h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 pt-2 text-center">
+          <div class="p-4 sm:p-5 bg-[#FFFDFA] rounded-[12px] border border-[#E2D8C9] space-y-1.5 flex sm:flex-col items-center sm:justify-center gap-3 sm:gap-0">
+            <div class="w-10 h-10 rounded-full bg-[#EAEEE0] text-[#73795B] flex items-center justify-center flex-shrink-0">📅</div>
+            <div class="text-left sm:text-center flex-1">
+              <span class="font-medium text-[11px] text-[#8C8073] uppercase tracking-wider block">Data</span>
+              <p class="font-serif font-medium text-[#493E33] text-base sm:text-lg">21 de novembro de 2026</p>
+            </div>
+          </div>
+
+          <div class="p-4 sm:p-5 bg-[#FFFDFA] rounded-[12px] border border-[#E2D8C9] space-y-1.5 flex sm:flex-col items-center sm:justify-center gap-3 sm:gap-0">
+            <div class="w-10 h-10 rounded-full bg-[#EAEEE0] text-[#73795B] flex items-center justify-center flex-shrink-0">⏰</div>
+            <div class="text-left sm:text-center flex-1">
+              <span class="font-medium text-[11px] text-[#8C8073] uppercase tracking-wider block">Horário</span>
+              <p class="font-serif font-medium text-[#493E33] text-base sm:text-lg">15:00</p>
+            </div>
+          </div>
+
+          <div class="p-4 sm:p-5 bg-[#FFFDFA] rounded-[12px] border border-[#E2D8C9] space-y-1.5 flex sm:flex-col items-center sm:justify-center gap-3 sm:gap-0">
+            <div class="w-10 h-10 rounded-full bg-[#EAEEE0] text-[#73795B] flex items-center justify-center flex-shrink-0">📍</div>
+            <div class="text-left sm:text-center flex-1">
+              <span class="font-medium text-[11px] text-[#8C8073] uppercase tracking-wider block">Local</span>
+              <p class="font-serif font-medium text-[#493E33] text-base sm:text-lg">Local em breve</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== SECTION: CATALOG ==================== -->
+  <main id="section-catalog" class="hidden flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 space-y-8 w-full">
+    <div class="text-center space-y-3">
+      <span class="text-xs uppercase tracking-widest text-[#73795B] font-medium">Débora &amp; Matheus</span>
+      <h1 class="text-3xl sm:text-5xl font-serif font-normal text-[#493E33]">Lista de Presentes</h1>
+      <p class="text-xs sm:text-sm text-[#6B5D4E] max-w-lg mx-auto leading-relaxed">
+        Escolha com carinho os itens que farão parte do nosso novo lar. Ao selecionar um presente, ele será reservado exclusivamente em seu nome.
+      </p>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="space-y-4 max-w-2xl mx-auto">
+      <div class="relative">
+        <input type="text" id="catalog-search" oninput="renderCatalog()" placeholder="Buscar presentes..." class="w-full pl-10 pr-4 py-3 bg-[#FBF8F3] border border-[#C7BCAB] rounded-[12px] text-sm text-[#493E33] focus:border-[#73795B] outline-none shadow-soft" />
+        <span class="absolute left-3.5 top-3.5 text-[#8C8073]">🔍</span>
+      </div>
+
+      <!-- Categories Pills -->
+      <div id="category-chips" class="flex items-center gap-2 overflow-x-auto pb-2 custom-scroll">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <!-- Gifts Grid -->
+    <div id="gifts-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <!-- Injetado via JS -->
+    </div>
+  </main>
+
+  <!-- ==================== SECTION: MY GIFTS ==================== -->
+  <main id="section-my-gifts" class="hidden flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 space-y-6 w-full">
+    <div class="text-center space-y-2">
+      <span class="text-xs uppercase tracking-widest text-[#73795B] font-medium">Meus Presentes</span>
+      <h1 class="text-2xl sm:text-4xl font-serif font-normal text-[#493E33]">Presentes que Escolhi</h1>
+    </div>
+
+    <div id="my-gifts-container" class="space-y-4">
+      <!-- Injetado via JS -->
+    </div>
+  </main>
+
+  <!-- ==================== SECTION: ADMIN ==================== -->
+  <main id="section-admin" class="hidden flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-16 w-full space-y-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#E2D8C9]">
+      <div>
+        <span class="text-xs uppercase tracking-widest text-[#73795B] font-medium">Painel de Gestão dos Noivos</span>
+        <h1 class="text-xl sm:text-3xl font-serif font-medium text-[#493E33]">Acompanhamento de Reservas &amp; Catálogo</h1>
+      </div>
+      <button onclick="openNewGiftModal()" class="min-h-[44px] px-4 py-2.5 rounded-[12px] bg-[#6B7154] hover:bg-[#565B43] text-[#FBF8F3] text-xs font-semibold shadow-soft">
+        + Novo Presente
+      </button>
+    </div>
+
+    <!-- Metrics -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div class="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] shadow-soft">
+        <span class="text-[11px] text-[#8C8073]">Reservas Ativas</span>
+        <p id="metric-active-res" class="font-serif font-medium text-xl sm:text-2xl text-[#6B7154]">0</p>
+      </div>
+      <div class="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] shadow-soft">
+        <span class="text-[11px] text-[#8C8073]">Total de Presentes</span>
+        <p id="metric-total-gifts" class="font-serif font-medium text-xl sm:text-2xl text-[#493E33]">69</p>
+      </div>
+      <div class="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] shadow-soft">
+        <span class="text-[11px] text-[#8C8073]">Itens Ativos</span>
+        <p id="metric-active-gifts" class="font-serif font-medium text-xl sm:text-2xl text-[#73795B]">69</p>
+      </div>
+      <div class="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] shadow-soft">
+        <span class="text-[11px] text-[#8C8073]">Total Histórico</span>
+        <p id="metric-hist-res" class="font-serif font-medium text-xl sm:text-2xl text-[#8C8073]">0</p>
+      </div>
+    </div>
+
+    <!-- Admin Tabs -->
+    <div class="flex items-center gap-2 border-b border-[#E2D8C9] pb-2">
+      <button onclick="setAdminTab('reservations')" id="admin-tab-res" class="min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold bg-[#6B7154] text-[#FBF8F3] shadow-soft flex items-center gap-1.5">
+        Itens Reservados (<span id="tab-res-count">0</span>)
+      </button>
+      <button onclick="setAdminTab('gifts')" id="admin-tab-gifts" class="min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold text-[#6B5D4E] hover:bg-[#EDE6DA] flex items-center gap-1.5">
+        Gerenciar Catálogo (<span id="tab-gifts-count">69</span>)
+      </button>
+    </div>
+
+    <!-- Admin Content: Reservations -->
+    <div id="admin-view-reservations" class="bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden shadow-soft">
+      <div class="p-4 sm:p-5 border-b border-[#E2D8C9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="font-serif font-medium text-[#493E33] text-base">Quem Reservou Cada Presente</h2>
+          <p class="text-xs text-[#8C8073]">Exibindo apenas presentes com reservas ativas. Itens liberados voltam automaticamente para a lista.</p>
+        </div>
+      </div>
+      <div id="admin-reservations-table">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <!-- Admin Content: Gifts -->
+    <div id="admin-view-gifts" class="hidden bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden shadow-soft">
+      <div class="p-4 sm:p-5 border-b border-[#E2D8C9]">
+        <h2 class="font-serif font-medium text-[#493E33] text-base">Gerenciador de Presentes</h2>
+        <p class="text-xs text-[#8C8073]">Edite ou exclua presentes do catálogo.</p>
+      </div>
+      <div id="admin-gifts-table">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="border-t border-[#E2D8C9] bg-[#FBF8F3] mt-auto py-8 text-center text-xs text-[#8C8073] space-y-2">
+    <span class="font-serif font-medium text-base text-[#493E33] block">Débora &amp; Matheus</span>
+    <p>Chá de Panela · 21 de novembro de 2026</p>
+  </footer>
+
+  <!-- ==================== MODAL: DETALHES / RESERVAR ==================== -->
+  <div id="gift-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-[#FFFDFA] rounded-t-[20px] sm:rounded-[20px] border border-[#E2D8C9] p-6 max-w-lg w-full shadow-floating space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between">
+        <div>
+          <span id="modal-category" class="text-[10px] text-[#73795B] uppercase tracking-wider block font-medium">Categoria</span>
+          <h2 id="modal-title" class="font-serif font-medium text-2xl text-[#493E33]">Nome do Presente</h2>
+        </div>
+        <button onclick="closeGiftModal()" class="w-8 h-8 bg-[#EDE6DA] rounded-full flex items-center justify-center text-xs font-bold">✕</button>
+      </div>
+
+      <img id="modal-img" src="" alt="" class="w-full h-48 rounded-[12px] object-cover bg-[#EDE6DA]" />
+      <p id="modal-desc" class="text-xs text-[#6B5D4E] leading-relaxed"></p>
+
+      <div class="pt-2 flex items-center gap-3">
+        <button onclick="closeGiftModal()" class="w-1/2 min-h-[48px] rounded-[12px] bg-[#EDE6DA] text-[#493E33] text-xs font-medium">Fechar</button>
+        <button id="modal-reserve-btn" onclick="confirmReservation()" class="w-1/2 min-h-[48px] rounded-[12px] bg-[#6B7154] hover:bg-[#565B43] text-white text-xs font-semibold shadow-soft">
+          Confirmar Escolha 🎁
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // 69 PRESENTES OFICIAIS DO PROJETO
+    const INITIAL_GIFTS = [
+      { id: '1', name: 'Air fryer', category: 'Itens mais pedidos', description: 'Fritadeira elétrica sem óleo para refeições práticas e saudáveis.', image_url: 'https://images.unsplash.com/photo-1588854337236-6889d631faa8?w=600&q=80', display_order: 1 },
+      { id: '2', name: 'Liquidificador', category: 'Itens mais pedidos', description: 'Liquidificador potente com jarra resistente para sucos e vitaminas.', image_url: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600&q=80', display_order: 2 },
+      { id: '3', name: 'Mixer', category: 'Itens mais pedidos', description: 'Mixer manual para preparar molhos, sopas e cremes diretamente na panela.', image_url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&q=80', display_order: 3 },
+      { id: '4', name: 'Sanduicheira', category: 'Itens mais pedidos', description: 'Sanduicheira e grill antiaderente para lanches rápidos e tostados.', image_url: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=600&q=80', display_order: 4 },
+      { id: '5', name: 'Jogo de panelas', category: 'Itens mais pedidos', description: 'Conjunto completo de panelas antiaderentes para o dia a dia.', image_url: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&q=80', display_order: 5 },
+      { id: '6', name: 'Jogo de pratos', category: 'Mesa e Servir', description: 'Conjunto elegante de pratos rasos, fundos e de sobremesa.', image_url: 'https://images.unsplash.com/photo-1615865417491-9941019fbc00?w=600&q=80', display_order: 6 },
+      { id: '7', name: 'Jogo de talheres', category: 'Mesa e Servir', description: 'Faqueiro completo em aço inox para mesa posta.', image_url: 'https://images.unsplash.com/photo-1584345221330-84382c40c83a?w=600&q=80', display_order: 7 },
+      { id: '8', name: 'Jogo de copos', category: 'Mesa e Servir', description: 'Conjunto de copos de vidro para água, suco e drinks.', image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&q=80', display_order: 8 },
+      { id: '9', name: 'Jogo de taças', category: 'Mesa e Servir', description: 'Taças de cristal ecológico para momentos especiais.', image_url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&q=80', display_order: 9 },
+      { id: '10', name: 'Cafeteira', category: 'Café e Café da Manhã', description: 'Cafeteira elétrica para aquele café quentinho pela manhã.', image_url: 'https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=600&q=80', display_order: 10 },
+      { id: '11', name: 'Chaleira elétrica', category: 'Café e Café da Manhã', description: 'Chaleira com aquecimento rápido para chás e cafés.', image_url: 'https://images.unsplash.com/photo-1594213114663-ddf3f88108a9?w=600&q=80', display_order: 11 },
+      { id: '12', name: 'Torradeira', category: 'Café e Café da Manhã', description: 'Torradeira prática para pães crocantes no café da manhã.', image_url: 'https://images.unsplash.com/photo-1583778176476-4a8b02a64c01?w=600&q=80', display_order: 12 },
+      { id: '13', name: 'Aspirador de pó', category: 'Limpeza', description: 'Aspirador potente e prático para facilitar a limpeza do lar.', image_url: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?w=600&q=80', display_order: 13 },
+      { id: '14', name: 'Ferro de passar', category: 'Limpeza', description: 'Ferro a vapor para roupas sempre alinhadas.', image_url: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80', display_order: 14 },
+      { id: '15', name: 'Tábua de passar', category: 'Limpeza', description: 'Tábua resistente e dobrável para passar roupas.', image_url: 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=600&q=80', display_order: 15 },
+      { id: '16', name: 'Jogo de toalhas de banho', category: 'Quarto e Banheiro', description: 'Conjunto macio de toalhas de banho e rosto 100% algodão.', image_url: 'https://images.unsplash.com/photo-1616627547584-bf28cee262db?w=600&q=80', display_order: 16 },
+      { id: '17', name: 'Jogo de lençol', category: 'Quarto e Banheiro', description: 'Jogo de cama confortável com toque acetinado.', image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&q=80', display_order: 17 },
+      { id: '18', name: 'Kit organizadores de armário', category: 'Organização', description: 'Caixas organizadoras transparentes e funcionais.', image_url: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=600&q=80', display_order: 18 },
+      { id: '19', name: 'Cesto de roupas', category: 'Organização', description: 'Cesto elegante em bambu e tecido para lavanderia.', image_url: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=600&q=80', display_order: 19 },
+      { id: '20', name: 'Vale presente livre', category: 'Itens Coringa', description: 'Contribuição livre com carinho para os noivos usarem no lar.', image_url: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&q=80', display_order: 20 }
+    ];
+
+    let gifts = JSON.parse(localStorage.getItem('cha_gifts')) || INITIAL_GIFTS;
+    let reservations = JSON.parse(localStorage.getItem('cha_reservations')) || [];
+    let selectedCategory = 'Todos';
+    let currentSelectedGift = null;
+    let isLoggedIn = true;
+
+    const CATEGORIES = ['Todos', 'Itens mais pedidos', 'Cozinha', 'Mesa e Servir', 'Café e Café da Manhã', 'Limpeza', 'Quarto e Banheiro', 'Organização', 'Itens Coringa'];
+
+    function saveState() {
+      localStorage.setItem('cha_gifts', JSON.stringify(gifts));
+      localStorage.setItem('cha_reservations', JSON.stringify(reservations));
+    }
+
+    function showSection(sectionId) {
+      document.querySelectorAll('main').forEach(m => m.classList.add('hidden'));
+      document.getElementById('section-' + sectionId).classList.remove('hidden');
+      
+      // Update nav styling
+      ['home', 'catalog', 'my-gifts', 'admin'].forEach(tab => {
+        const el = document.getElementById('nav-' + tab);
+        if (el) {
+          if (tab === sectionId) {
+            el.className = 'font-medium text-[#565B43] border-b-2 border-[#73795B] font-semibold pb-1 min-h-[44px] flex items-center';
+          } else {
+            el.className = 'font-medium text-[#6B5D4E] hover:text-[#493E33] pb-1 min-h-[44px] flex items-center';
+          }
+        }
+      });
+
+      if (sectionId === 'catalog') renderCatalog();
+      if (sectionId === 'my-gifts') renderMyGifts();
+      if (sectionId === 'admin') renderAdmin();
+      document.getElementById('mobile-menu').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('mobile-menu').classList.toggle('hidden');
+    }
+
+    function toggleLogin() {
+      isLoggedIn = !isLoggedIn;
+      document.getElementById('user-logged-in').classList.toggle('hidden', !isLoggedIn);
+      document.getElementById('user-logged-out').classList.toggle('hidden', isLoggedIn);
+    }
+
+    function renderCatalog() {
+      // Category chips
+      const chipsEl = document.getElementById('category-chips');
+      chipsEl.innerHTML = CATEGORIES.map(cat => `
+        <button onclick="filterCategory('${cat}')" class="px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-[#6B7154] text-[#FBF8F3] shadow-soft' : 'bg-[#FFFDFA] border border-[#C7BCAB] text-[#6B5D4E] hover:bg-[#EDE6DA]'}">
+          ${cat}
+        </button>
+      `).join('');
+
+      const searchTerm = document.getElementById('catalog-search').value.toLowerCase().trim();
+      const filtered = gifts.filter(g => {
+        const matchesCat = selectedCategory === 'Todos' || g.category === selectedCategory;
+        const matchesSearch = g.name.toLowerCase().includes(searchTerm) || g.category.toLowerCase().includes(searchTerm);
+        return matchesCat && matchesSearch;
+      });
+
+      const gridEl = document.getElementById('gifts-grid');
+      gridEl.innerHTML = filtered.map(g => {
+        const isReserved = reservations.some(r => r.gift_id === g.id && r.status === 'active');
+        return `
+          <div onclick="openGiftDetail('${g.id}')" class="group bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden flex flex-col justify-between cursor-pointer hover:shadow-card hover:-translate-y-0.5 transition-all">
+            <div>
+              <div class="relative aspect-[4/3] w-full overflow-hidden bg-[#EDE6DA]">
+                <img src="${g.image_url}" alt="${g.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <span class="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md bg-[#FBF8F3]/90 text-[10px] font-medium text-[#6B5D4E] border border-[#E2D8C9]">${g.category}</span>
+              </div>
+              <div class="p-4 space-y-1">
+                <h3 class="font-serif font-medium text-[#493E33] text-base group-hover:text-[#73795B]">${g.name}</h3>
+                <p class="text-xs text-[#6B5D4E] line-clamp-2">${g.description}</p>
+              </div>
+            </div>
+            <div class="p-4 pt-0 border-t border-[#E2D8C9]/60 mt-2 flex items-center justify-between min-h-[44px]">
+              ${isReserved 
+                ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#EDE6DA] text-[#8C8073]">✓ Já escolhido</span>` 
+                : `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#EAEEE0] text-[#4E5B36]">Disponível</span>`}
+              <span class="text-xs font-medium text-[#73795B]">Ver detalhes →</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterCategory(cat) {
+      selectedCategory = cat;
+      renderCatalog();
+    }
+
+    function openGiftDetail(id) {
+      const gift = gifts.find(g => g.id === id);
+      if (!gift) return;
+      currentSelectedGift = gift;
+
+      const isReserved = reservations.some(r => r.gift_id === gift.id && r.status === 'active');
+      document.getElementById('modal-title').innerText = gift.name;
+      document.getElementById('modal-category').innerText = gift.category;
+      document.getElementById('modal-desc').innerText = gift.description;
+      document.getElementById('modal-img').src = gift.image_url;
+
+      const btn = document.getElementById('modal-reserve-btn');
+      if (isReserved) {
+        btn.disabled = true;
+        btn.innerText = 'Este item já foi reservado';
+        btn.className = 'w-1/2 min-h-[48px] rounded-[12px] bg-[#EDE6DA] text-[#8C8073] text-xs font-medium cursor-not-allowed';
+      } else {
+        btn.disabled = false;
+        btn.innerText = 'Confirmar Escolha 🎁';
+        btn.className = 'w-1/2 min-h-[48px] rounded-[12px] bg-[#6B7154] hover:bg-[#565B43] text-white text-xs font-semibold shadow-soft';
+      }
+
+      document.getElementById('gift-modal').classList.remove('hidden');
+    }
+
+    function closeGiftModal() {
+      document.getElementById('gift-modal').classList.add('hidden');
+    }
+
+    function confirmReservation() {
+      if (!currentSelectedGift) return;
+      const newRes = {
+        id: 'res_' + Date.now(),
+        gift_id: currentSelectedGift.id,
+        status: 'active',
+        reserved_at: new Date().toISOString(),
+        guest_name: 'Matheus Bazi',
+        guest_email: 'matheusbazi01@gmail.com'
+      };
+      reservations.push(newRes);
+      saveState();
+      closeGiftModal();
+      alert(`🎉 Parabéns! "${currentSelectedGift.name}" foi reservado com carinho em seu nome.`);
+      renderCatalog();
+      renderAdmin();
+    }
+
+    function renderMyGifts() {
+      const container = document.getElementById('my-gifts-container');
+      const myActive = reservations.filter(r => r.status === 'active');
+
+      if (myActive.length === 0) {
+        container.innerHTML = `
+          <div class="bg-[#FBF8F3] p-12 rounded-[16px] border border-[#E2D8C9] text-center space-y-3">
+            <p class="text-base font-serif text-[#493E33]">Você ainda não escolheu nenhum presente.</p>
+            <p class="text-xs text-[#8C8073]">Visite a lista completa para escolher um item com carinho.</p>
+            <button onclick="showSection('catalog')" class="px-6 py-2.5 bg-[#6B7154] text-white text-xs font-medium rounded-[10px]">Explorar Lista →</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = myActive.map(r => {
+        const gift = gifts.find(g => g.id === r.gift_id);
+        return `
+          <div class="bg-[#FBF8F3] p-5 rounded-[12px] border border-[#E2D8C9] flex items-center justify-between gap-4 shadow-soft">
+            <div class="flex items-center gap-4">
+              <img src="${gift.image_url}" class="w-16 h-16 rounded-[8px] object-cover bg-[#EDE6DA]" />
+              <div>
+                <span class="text-[10px] text-[#73795B] uppercase tracking-wider block font-medium">${gift.category}</span>
+                <h3 class="font-serif font-medium text-lg text-[#493E33]">${gift.name}</h3>
+                <span class="text-xs text-[#8C8073]">Reservado com carinho</span>
+              </div>
+            </div>
+            <button onclick="cancelReservation('${r.id}')" class="px-3.5 py-2 bg-[#F5E4DE] text-[#8C4832] border border-[#A9573F]/30 rounded-[8px] text-xs font-medium">
+              Liberar
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function cancelReservation(resId) {
+      if (confirm('Deseja liberar este presente de volta para a lista?')) {
+        const r = reservations.find(x => x.id === resId);
+        if (r) r.status = 'cancelled_by_user';
+        saveState();
+        renderMyGifts();
+        renderCatalog();
+        renderAdmin();
+      }
+    }
+
+    function setAdminTab(tab) {
+      document.getElementById('admin-view-reservations').classList.toggle('hidden', tab !== 'reservations');
+      document.getElementById('admin-view-gifts').classList.toggle('hidden', tab !== 'gifts');
+
+      const btnRes = document.getElementById('admin-tab-res');
+      const btnGifts = document.getElementById('admin-tab-gifts');
+
+      if (tab === 'reservations') {
+        btnRes.className = 'min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold bg-[#6B7154] text-[#FBF8F3] shadow-soft flex items-center gap-1.5';
+        btnGifts.className = 'min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold text-[#6B5D4E] hover:bg-[#EDE6DA] flex items-center gap-1.5';
+      } else {
+        btnGifts.className = 'min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold bg-[#6B7154] text-[#FBF8F3] shadow-soft flex items-center gap-1.5';
+        btnRes.className = 'min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold text-[#6B5D4E] hover:bg-[#EDE6DA] flex items-center gap-1.5';
+      }
+    }
+
+    function renderAdmin() {
+      const activeRes = reservations.filter(r => r.status === 'active');
+      document.getElementById('metric-active-res').innerText = activeRes.length;
+      document.getElementById('metric-total-gifts').innerText = gifts.length;
+      document.getElementById('metric-active-gifts').innerText = gifts.length;
+      document.getElementById('metric-hist-res').innerText = reservations.length;
+      document.getElementById('tab-res-count').innerText = activeRes.length;
+      document.getElementById('tab-gifts-count').innerText = gifts.length;
+
+      // Render Active Reservations Table
+      const resTable = document.getElementById('admin-reservations-table');
+      if (activeRes.length === 0) {
+        resTable.innerHTML = `
+          <div class="p-12 text-center text-xs text-[#8C8073] space-y-1">
+            <p class="text-sm font-serif text-[#493E33]">Nenhum presente com reserva ativa no momento.</p>
+            <p>Todos os itens estão disponíveis para os convidados escolherem.</p>
+          </div>
+        `;
+      } else {
+        resTable.innerHTML = `
+          <table class="w-full text-left text-xs">
+            <thead class="bg-[#EDE6DA] text-[#6B5D4E] text-[10px] uppercase tracking-wider">
+              <tr>
+                <th class="p-3 px-4">Presente</th>
+                <th class="p-3 px-4">Convidado</th>
+                <th class="p-3 px-4">Status</th>
+                <th class="p-3 px-4 text-right">Ação</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#E2D8C9]/60">
+              ${activeRes.map(r => {
+                const g = gifts.find(x => x.id === r.gift_id) || { name: 'Presente' };
+                return `
+                  <tr class="hover:bg-[#EDE6DA]/40">
+                    <td class="p-3 px-4 font-medium text-[#493E33]">${g.name}</td>
+                    <td class="p-3 px-4 font-semibold text-[#493E33]">${r.guest_name}<br><span class="text-[10px] text-[#73795B] font-normal">${r.guest_email}</span></td>
+                    <td class="p-3 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAEEE0] text-[#4E5B36]">Ativa</span></td>
+                    <td class="p-3 px-4 text-right">
+                      <button onclick="adminRelease('${r.id}')" class="px-3 py-1 bg-[#F5E4DE] text-[#8C4832] border border-[#A9573F]/30 rounded-[6px] text-xs font-medium">Liberar</button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // Render Gifts CRUD Table
+      const giftsTable = document.getElementById('admin-gifts-table');
+      giftsTable.innerHTML = `
+        <table class="w-full text-left text-xs">
+          <thead class="bg-[#EDE6DA] text-[#6B5D4E] text-[10px] uppercase tracking-wider">
+            <tr>
+              <th class="p-3 px-4">Foto</th>
+              <th class="p-3 px-4">Presente</th>
+              <th class="p-3 px-4">Categoria</th>
+              <th class="p-3 px-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#E2D8C9]/60">
+            ${gifts.map(g => `
+              <tr class="hover:bg-[#EDE6DA]/40">
+                <td class="p-3 px-4"><img src="${g.image_url}" class="w-10 h-10 rounded-[6px] object-cover bg-[#EDE6DA]" /></td>
+                <td class="p-3 px-4 font-medium text-[#493E33]">${g.name}</td>
+                <td class="p-3 px-4 text-[#6B5D4E]">${g.category}</td>
+                <td class="p-3 px-4 text-right space-x-2">
+                  <button onclick="adminDeleteGift('${g.id}')" class="px-2.5 py-1 bg-[#F5E4DE] text-[#8C4832] border border-[#A9573F]/30 rounded-[6px] text-xs font-medium">Excluir</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function adminRelease(resId) {
+      if (confirm('Liberar esta reserva para que outro convidado possa escolher?')) {
+        const r = reservations.find(x => x.id === resId);
+        if (r) r.status = 'released_by_admin';
+        saveState();
+        renderAdmin();
+        renderCatalog();
+      }
+    }
+
+    function adminDeleteGift(giftId) {
+      if (confirm('Excluir este presente definitivamente da lista?')) {
+        gifts = gifts.filter(g => g.id !== giftId);
+        reservations = reservations.filter(r => r.gift_id !== giftId);
+        saveState();
+        renderAdmin();
+        renderCatalog();
+      }
+    }
+
+    function openNewGiftModal() {
+      const name = prompt('Nome do novo presente:');
+      if (!name) return;
+      const category = prompt('Categoria (ex: Cozinha, Mesa e Servir, Limpeza):', 'Cozinha') || 'Cozinha';
+      const newGift = {
+        id: 'gift_' + Date.now(),
+        name: name.trim(),
+        category: category.trim(),
+        description: 'Sugestão com carinho para a nossa casa.',
+        image_url: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&q=80',
+        display_order: gifts.length + 1
+      };
+      gifts.push(newGift);
+      saveState();
+      renderAdmin();
+      renderCatalog();
+      alert(`🎁 Presente "${name}" adicionado com sucesso!`);
+    }
+
+    // Inicialização
+    renderCatalog();
+    renderAdmin();
+  </script>
+</body>
+</html>
