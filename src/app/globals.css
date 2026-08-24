@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* --- PALETA COMPLETA & TOKENS SEMÂNTICOS --- */
+  
+  /* Bases */
+  --color-bg-primary: #F4EFE7;       /* Warm Off-White */
+  --color-bg-secondary: #EDE6DA;     /* Warm Sand Wash */
+  --color-surface: #FBF8F3;          /* Paper White */
+  --color-surface-elevated: #FFFDFA; /* Modal, tooltip, dropdown */
+  --color-ivory: #E8DED0;            /* Ivory / Cream */
+  
+  /* Textos */
+  --color-text-primary: #493E33;     /* Warm Espresso (9.4:1 AAA) */
+  --color-text-secondary: #6B5D4E;   /* Espresso 70 (5.6:1 AA) */
+  --color-text-muted: #8C8073;       /* Espresso 50 */
+  --color-text-inverse: #FBF8F3;
+
+  /* Natureza, Marca & Madeira */
+  --color-brand-primary: #969E78;    /* Sage Green */
+  --color-brand-secondary: #73795B;  /* Olive Sage */
+  --color-brand-deep: #5F6549;       /* Deep Olive */
+  --color-accent-wood: #BA9568;      /* Light Wood */
+  --color-sand: #CEB38D;             /* Sand Beige */
+  --color-greige: #B2AA9E;           /* Warm Greige */
+
+  /* Bordas */
+  --color-border-soft: #E2D8C9;
+  --color-border-strong: #C7BCAB;
+
+  /* Botões */
+  --color-btn-primary: #6B7154;      /* Botão primário (5.9:1 AA) */
+  --color-btn-primary-hover: #565B43;
+  --color-btn-secondary-border: #969E78;
+  --color-btn-secondary-hover-bg: #EDEFE4;
+
+  /* Funcionais */
+  --color-success: #7C8B5E;
+  --color-success-tint: #EAEEE0;
+  --color-success-text: #4E5B36;
+
+  --color-warning: #C08A3E;
+  --color-warning-tint: #F6EBDA;
+  --color-warning-text: #7A5620;
+
+  --color-error: #A9573F;
+  --color-error-tint: #F5E4DE;
+  --color-error-text: #8C4832;
+
+  --color-disabled-bg: #E2DCD2;
+  --color-disabled-text: #8C8073;
+
+  /* Sombras em Espresso Translúcido */
+  --shadow-soft: 0 1px 2px rgba(73, 62, 51, 0.06);
+  --shadow-card: 0 8px 24px -12px rgba(73, 62, 51, 0.18);
+  --shadow-floating: 0 20px 48px -20px rgba(73, 62, 51, 0.26);
+
+  /* Fontes */
+  --font-serif: var(--font-cormorant), Cormorant Garamond, Georgia, serif;
+  --font-sans: var(--font-karla), Karla, system-ui, sans-serif;
+  --font-script: var(--font-parisienne), Parisienne, cursive;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Tipografia Utilitária */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-script {
+  font-family: var(--font-script);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+/* Touch Targets e Safe Area */
+.safe-area-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.safe-area-top {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+/* Ocultar barra de rolagem mantendo funcionalidade de touch pan */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Foco Acessível Visível */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-brand-secondary) !important;
+  outline-offset: 2px !important;
+}
+
+/* Prevenção de Auto-Zoom em iOS em Inputs */
+input, textarea, select {
+  font-size: 16px;
+}
+
+/* Animações Suaves & Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
