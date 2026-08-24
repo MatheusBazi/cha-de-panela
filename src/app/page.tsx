@@ -8,6 +8,17 @@ import { createClient } from "@/lib/supabase/client";
 import { REAL_GIFTS, type PublicGift } from "@/lib/catalog/fixtures";
 import type { User } from "@supabase/supabase-js";
 
+function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z" />
+      <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z" />
+      <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.4 0 15.2c0 2.8.7 5.5 1.9 7.9l3.7-2.9z" />
+      <path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16.5C3.7 20.2 7.5 23.5 12 23.5z" />
+    </svg>
+  );
+}
+
 export default function HomePage() {
   const [featuredGifts, setFeaturedGifts] = useState<PublicGift[]>([]);
   const [user, setUser] = useState<User | null>(null);
@@ -34,6 +45,16 @@ export default function HomePage() {
     loadFeatured();
   }, []);
 
+  async function handleGoogleLogin() {
+    const origin = window.location.origin;
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/auth/callback?next=/presentes`,
+      },
+    });
+  }
+
   return (
     <div className="min-h-screen bg-[#F4EFE7] flex flex-col selection:bg-sage-200 text-[#493E33]">
       <Header />
@@ -41,7 +62,7 @@ export default function HomePage() {
       <main className="flex-1 space-y-12 sm:space-y-20 pb-16 sm:pb-20">
         {/* Hero Section Mobile-First */}
         <section className="relative pt-8 sm:pt-16 pb-8 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center space-y-5">
-          {/* Folhagem Decorativa Suave (Oculta em viewports muito estreitas para não poluir) */}
+          {/* Folhagem Decorativa Suave */}
           <div className="absolute top-0 left-0 -translate-x-4 -translate-y-4 pointer-events-none opacity-30 hidden md:block">
             <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
               <g stroke="#969E78" strokeWidth="1" strokeLinecap="round" fill="none">
@@ -62,7 +83,7 @@ export default function HomePage() {
             Chá de Panela
           </div>
 
-          {/* Título Principal com Quebra de Linha Natural */}
+          {/* Título Principal */}
           <h1 className="font-serif font-light text-4xl sm:text-6xl md:text-7xl text-[#493E33] tracking-tight leading-[1.08] break-words">
             Débora &amp; Matheus
           </h1>
@@ -83,18 +104,26 @@ export default function HomePage() {
             >
               Ver Lista de Presentes →
             </Link>
-            {user && (
+            {user ? (
               <Link
                 href="/meus-presentes"
                 className="w-full sm:w-auto min-h-[48px] px-6 py-3.5 rounded-[12px] bg-[#FBF8F3] hover:bg-[#EDE6DA] active:bg-[#E2D8C9] text-[#493E33] border border-[#C7BCAB] text-sm font-medium flex items-center justify-center transition-colors"
               >
                 Meus Presentes Escolhidos
               </Link>
+            ) : (
+              <button
+                onClick={handleGoogleLogin}
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3.5 rounded-[12px] bg-[#FFFDFA] hover:bg-[#EDE6DA] active:bg-[#E2D8C9] text-[#493E33] border border-[#C7BCAB] text-sm font-medium flex items-center justify-center gap-2.5 transition-colors shadow-soft"
+              >
+                <GoogleIcon className="w-4 h-4" />
+                <span>Entrar com Google</span>
+              </button>
             )}
           </div>
         </section>
 
-        {/* Detalhes do Encontro (Responsivo 1-col mobile / 3-col desktop) */}
+        {/* Detalhes do Encontro */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-[#FBF8F3] rounded-[16px] sm:rounded-[20px] border border-[#E2D8C9] p-5 sm:p-8 md:p-10 shadow-soft space-y-6">
             <div className="text-center space-y-1">
@@ -111,7 +140,7 @@ export default function HomePage() {
               <div className="p-4 sm:p-5 bg-[#FFFDFA] rounded-[12px] border border-[#E2D8C9] space-y-1.5 flex sm:flex-col items-center sm:justify-center gap-3 sm:gap-0">
                 <div className="w-10 h-10 rounded-full bg-[#EAEEE0] text-[#73795B] flex items-center justify-center flex-shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="3"></rect>
+                    <rect x="3" y="4" width="18" height="13" rx="3"></rect>
                     <path d="M16 2v4M8 2v4M3 10h18"></path>
                   </svg>
                 </div>
