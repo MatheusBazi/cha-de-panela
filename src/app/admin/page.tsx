@@ -65,20 +65,34 @@ export default function AdminPage() {
     setUser(user);
 
     try {
-      const resRes = await fetch("/api/admin/reservations");
-      const resJson = await resRes.json();
-      if (resJson.success && Array.isArray(resJson.data)) {
-        setReservations(resJson.data);
+      const [resResponse, giftResponse] = await Promise.allSettled([
+        fetch("/api/admin/reservations"),
+        fetch("/api/admin/gifts"),
+      ]);
+
+      if (resResponse.status === "fulfilled" && resResponse.value.ok) {
+        const resJson = await resResponse.value.json();
+        if (resJson.success && Array.isArray(resJson.data)) {
+          setReservations(resJson.data);
+        }
       }
 
-      const giftRes = await fetch("/api/admin/gifts");
-      const giftJson = await giftRes.json();
-      if (giftJson.success && Array.isArray(giftJson.data)) {
-        setGifts(giftJson.data);
+      if (giftResponse.status === "fulfilled" && giftResponse.value.ok) {
+        const giftJson = await giftResponse.value.json();
+        if (giftJson.success && Array.isArray(giftJson.data) && giftJson.data.length > 0) {
+          setGifts(giftJson.data);
+        } else {
+          const pubRes = await fetch("/api/gifts");
+          const pubJson = await pubRes.json();
+          setGifts(pubJson.data || REAL_GIFTS);
+        }
       } else {
-        setGifts(REAL_GIFTS);
+        const pubRes = await fetch("/api/gifts");
+        const pubJson = await pubRes.json();
+        setGifts(pubJson.data || REAL_GIFTS);
       }
-    } catch {
+    } catch (err) {
+      console.warn("Erro ao carregar dados do admin:", err);
       setGifts(REAL_GIFTS);
     } finally {
       setLoading(false);
