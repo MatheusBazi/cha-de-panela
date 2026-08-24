@@ -32,7 +32,7 @@ interface AdminReservation {
 
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<"reservations" | "gifts">("gifts");
+  const [activeTab, setActiveTab] = useState<"reservations" | "gifts">("reservations");
   const [reservations, setReservations] = useState<AdminReservation[]>([]);
   const [gifts, setGifts] = useState<PublicGift[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +50,7 @@ export default function AdminPage() {
   const [formExternalUrl, setFormExternalUrl] = useState("");
   const [formExternalNote, setFormExternalNote] = useState("");
   const [formDisplayOrder, setFormDisplayOrder] = useState(1);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Liberação de Reservas
   const [releasingId, setReleasingId] = useState<string | null>(null);
@@ -89,6 +90,10 @@ export default function AdminPage() {
   }, []);
 
   function openCreateModal() {
+    const nextOrder = gifts.length > 0
+      ? Math.max(...gifts.map((g) => g.display_order || 0)) + 1
+      : 1;
+
     setEditingGift(null);
     setFormName("");
     setFormCategory("Cozinha");
@@ -96,7 +101,7 @@ export default function AdminPage() {
     setFormImageUrl("");
     setFormExternalUrl("");
     setFormExternalNote("");
-    setFormDisplayOrder(gifts.length + 1);
+    setFormDisplayOrder(nextOrder);
     setErrorMessage(null);
     setIsGiftModalOpen(true);
   }
@@ -112,6 +117,35 @@ export default function AdminPage() {
     setFormDisplayOrder(gift.display_order);
     setErrorMessage(null);
     setIsGiftModalOpen(true);
+  }
+
+  function handleImageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor, selecione um arquivo de imagem válido.");
+      return;
+    }
+
+    // Limite de 4MB
+    if (file.size > 4 * 1024 * 1024) {
+      alert("A imagem selecionada é muito pesada. Escolha uma foto de até 4MB.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setFormImageUrl(result);
+      setIsUploadingImage(false);
+    };
+    reader.onerror = () => {
+      alert("Erro ao ler o arquivo de imagem.");
+      setIsUploadingImage(false);
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleSaveGift(e: React.FormEvent) {
@@ -239,7 +273,7 @@ export default function AdminPage() {
               Painel de Gestão dos Noivos
             </span>
             <h1 className="text-xl sm:text-3xl font-serif font-medium text-[#493E33] tracking-tight">
-              Gestão de Presentes &amp; Reservas
+              Acompanhamento de Reservas &amp; Catálogo
             </h1>
           </div>
           <div className="flex items-center gap-2.5 w-full sm:w-auto">
@@ -261,16 +295,16 @@ export default function AdminPage() {
         {/* Cards de Métricas */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] space-y-1 shadow-soft">
-            <span className="text-[11px] sm:text-xs text-[#8C8073]">Total de Itens</span>
+            <span className="text-[11px] sm:text-xs text-[#8C8073]">Reservas Ativas</span>
+            <p className="font-serif font-medium text-xl sm:text-2xl text-[#6B7154]">{activeReservations.length}</p>
+          </div>
+          <div className="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] space-y-1 shadow-soft">
+            <span className="text-[11px] sm:text-xs text-[#8C8073]">Total de Presentes</span>
             <p className="font-serif font-medium text-xl sm:text-2xl text-[#493E33]">{gifts.length}</p>
           </div>
           <div className="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] space-y-1 shadow-soft">
             <span className="text-[11px] sm:text-xs text-[#8C8073]">Itens Ativos</span>
             <p className="font-serif font-medium text-xl sm:text-2xl text-[#73795B]">{gifts.filter((g) => g.is_active !== false).length}</p>
-          </div>
-          <div className="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] space-y-1 shadow-soft">
-            <span className="text-[11px] sm:text-xs text-[#8C8073]">Reservas Ativas</span>
-            <p className="font-serif font-medium text-xl sm:text-2xl text-[#6B7154]">{activeReservations.length}</p>
           </div>
           <div className="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] space-y-1 shadow-soft">
             <span className="text-[11px] sm:text-xs text-[#8C8073]">Itens Inativos</span>
@@ -281,16 +315,6 @@ export default function AdminPage() {
         {/* Abas de Navegação Admin */}
         <div className="flex items-center gap-2 border-b border-[#E2D8C9] pb-2">
           <button
-            onClick={() => setActiveTab("gifts")}
-            className={`min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold transition-all flex items-center ${
-              activeTab === "gifts"
-                ? "bg-[#6B7154] text-[#FBF8F3] shadow-soft"
-                : "bg-transparent text-[#6B5D4E] hover:bg-[#EDE6DA]"
-            }`}
-          >
-            Catálogo ({gifts.length})
-          </button>
-          <button
             onClick={() => setActiveTab("reservations")}
             className={`min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold transition-all flex items-center ${
               activeTab === "reservations"
@@ -298,11 +322,187 @@ export default function AdminPage() {
                 : "bg-transparent text-[#6B5D4E] hover:bg-[#EDE6DA]"
             }`}
           >
-            Auditoria ({reservations.length})
+            Itens Reservados ({reservations.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("gifts")}
+            className={`min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold transition-all flex items-center ${
+              activeTab === "gifts"
+                ? "bg-[#6B7154] text-[#FBF8F3] shadow-soft"
+                : "bg-transparent text-[#6B5D4E] hover:bg-[#EDE6DA]"
+            }`}
+          >
+            Gerenciar Catálogo ({gifts.length})
           </button>
         </div>
 
-        {/* TAB 1: GERENCIAMENTO DE PRESENTES (CRUD) */}
+        {/* TAB 1: ITENS RESERVADOS (AUDITORIA DE QUEM RESERVOU O QUE) */}
+        {activeTab === "reservations" && (
+          <div className="bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden shadow-soft">
+            <div className="p-4 sm:p-5 border-b border-[#E2D8C9]">
+              <h2 className="font-serif font-medium text-[#493E33] text-base">
+                Quem Reservou Cada Presente
+              </h2>
+              <p className="text-xs text-[#8C8073]">
+                Lista de todos os presentes escolhidos pelos convidados com identificação e data.
+              </p>
+            </div>
+
+            {loading ? (
+              <div className="p-12 text-center text-xs text-[#8C8073] animate-pulse">
+                Carregando reservas dos convidados...
+              </div>
+            ) : reservations.length === 0 ? (
+              <div className="p-12 text-center text-xs text-[#8C8073] space-y-2">
+                <p className="text-sm font-serif text-[#493E33]">Nenhum presente foi reservado ainda.</p>
+                <p>Assim que um convidado confirmar a escolha, os dados de quem presenteou aparecerão aqui.</p>
+              </div>
+            ) : (
+              <div>
+                {/* Mobile View: Cards */}
+                <div className="sm:hidden divide-y divide-[#E2D8C9]/60">
+                  {reservations.map((res) => {
+                    const gift = res.gifts;
+                    const profile = res.profiles;
+                    const isActive = res.status === "active";
+                    const isCancelled = res.status === "cancelled_by_user";
+                    const dateStr = new Date(res.reserved_at).toLocaleDateString("pt-BR", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+
+                    return (
+                      <div key={res.id} className="p-4 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] text-[#73795B] uppercase tracking-wider block font-medium">
+                              {gift?.category || "Chá de Panela"}
+                            </span>
+                            <h3 className="font-serif font-medium text-base text-[#493E33]">
+                              {gift?.name || "Presente"}
+                            </h3>
+                          </div>
+                          {isActive ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAEEE0] text-[#4E5B36] flex-shrink-0">
+                              Ativa
+                            </span>
+                          ) : isCancelled ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#EDE6DA] text-[#8C8073] flex-shrink-0">
+                              Cancelada Convidado
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#E8DED0] text-[#6B5D4E] flex-shrink-0">
+                              Liberada Noivos
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="p-3 bg-[#FFFDFA] rounded-[8px] border border-[#E2D8C9] space-y-1 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#8C8073]">Convidado:</span>
+                            <span className="font-semibold text-[#493E33]">{profile?.name || "Convidado"}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#8C8073]">E-mail:</span>
+                            <span className="text-[#6B5D4E]">{profile?.email || res.user_id}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#8C8073]">Data/Hora:</span>
+                            <span className="text-[#8C8073] font-mono">{dateStr}</span>
+                          </div>
+                        </div>
+
+                        {isActive && (
+                          <div className="pt-1">
+                            <button
+                              onClick={() => setReleasingId(res.id)}
+                              className="w-full min-h-[40px] bg-[#F5E4DE] text-[#8C4832] border border-[#A9573F]/30 rounded-[8px] font-medium text-xs flex items-center justify-center"
+                            >
+                              Liberar presente de volta para a lista
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop View: Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#EDE6DA] border-b border-[#E2D8C9] text-[#6B5D4E] uppercase text-[10px] tracking-wider">
+                      <tr>
+                        <th className="py-3 px-4">Presente</th>
+                        <th className="py-3 px-4">Convidado (Nome e E-mail)</th>
+                        <th className="py-3 px-4">Data e Hora</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2D8C9]/60">
+                      {reservations.map((res) => {
+                        const gift = res.gifts;
+                        const profile = res.profiles;
+                        const isActive = res.status === "active";
+                        const isCancelled = res.status === "cancelled_by_user";
+                        const dateStr = new Date(res.reserved_at).toLocaleDateString("pt-BR", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+
+                        return (
+                          <tr key={res.id} className="hover:bg-[#EDE6DA]/40 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="font-medium text-[#493E33]">{gift?.name || "Presente"}</div>
+                              <div className="text-[11px] text-[#8C8073]">{gift?.category}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-[#493E33] font-semibold">{profile?.name || "Convidado"}</div>
+                              <div className="text-[11px] text-[#73795B]">{profile?.email || res.user_id}</div>
+                            </td>
+                            <td className="py-3 px-4 text-[#6B5D4E] font-mono">{dateStr}</td>
+                            <td className="py-3 px-4">
+                              {isActive ? (
+                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#EAEEE0] text-[#4E5B36]">
+                                  Ativa
+                                </span>
+                              ) : isCancelled ? (
+                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#EDE6DA] text-[#8C8073]">
+                                  Cancelada Convidado
+                                </span>
+                              ) : (
+                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#E8DED0] text-[#6B5D4E]">
+                                  Liberada Noivos
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {isActive && (
+                                <button
+                                  onClick={() => setReleasingId(res.id)}
+                                  className="px-3 py-1 bg-[#F5E4DE] hover:bg-[#A9573F] hover:text-white border border-[#A9573F]/30 rounded-[6px] text-xs font-medium text-[#8C4832] transition-colors"
+                                >
+                                  Liberar
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: GERENCIAMENTO DE PRESENTES (CRUD) */}
         {activeTab === "gifts" && (
           <div className="bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden shadow-soft">
             <div className="p-4 sm:p-5 border-b border-[#E2D8C9]">
@@ -310,7 +510,7 @@ export default function AdminPage() {
                 Gerenciador de Presentes
               </h2>
               <p className="text-xs text-[#8C8073]">
-                Adicione, edite ou desative presentes. A desativação preserva o histórico de reservas.
+                Adicione novos presentes, edite informações ou envie fotos personalizadas.
               </p>
             </div>
 
@@ -321,13 +521,26 @@ export default function AdminPage() {
                 return (
                   <div key={gift.id} className="p-4 space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <span className="text-[10px] text-[#8C8073] uppercase tracking-wider block">
-                          #{gift.display_order} · {gift.category}
-                        </span>
-                        <h3 className="font-serif font-medium text-base text-[#493E33] truncate">
-                          {gift.name}
-                        </h3>
+                      <div className="flex items-center gap-3 min-w-0">
+                        {gift.image_url ? (
+                          <img
+                            src={gift.image_url}
+                            alt={gift.name}
+                            className="w-12 h-12 rounded-[8px] object-cover bg-[#EDE6DA] flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-[8px] bg-[#EDE6DA] flex items-center justify-center text-[#73795B] flex-shrink-0">
+                            🎁
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <span className="text-[10px] text-[#8C8073] uppercase tracking-wider block">
+                            #{gift.display_order} · {gift.category}
+                          </span>
+                          <h3 className="font-serif font-medium text-base text-[#493E33] truncate">
+                            {gift.name}
+                          </h3>
+                        </div>
                       </div>
                       {isActive ? (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAEEE0] text-[#4E5B36] flex-shrink-0">
@@ -373,6 +586,7 @@ export default function AdminPage() {
                 <thead className="bg-[#EDE6DA] border-b border-[#E2D8C9] text-[#6B5D4E] uppercase text-[10px] tracking-wider">
                   <tr>
                     <th className="py-3 px-4">Ordem</th>
+                    <th className="py-3 px-4">Foto</th>
                     <th className="py-3 px-4">Presente</th>
                     <th className="py-3 px-4">Categoria</th>
                     <th className="py-3 px-4">Status</th>
@@ -385,7 +599,20 @@ export default function AdminPage() {
 
                     return (
                       <tr key={gift.id} className="hover:bg-[#EDE6DA]/40 transition-colors">
-                        <td className="py-3 px-4 font-mono text-[#8C8073]">{gift.display_order}</td>
+                        <td className="py-3 px-4 font-mono text-[#8C8073]">#{gift.display_order}</td>
+                        <td className="py-3 px-4">
+                          {gift.image_url ? (
+                            <img
+                              src={gift.image_url}
+                              alt={gift.name}
+                              className="w-10 h-10 rounded-[6px] object-cover bg-[#EDE6DA]"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-[6px] bg-[#EDE6DA] flex items-center justify-center text-xs text-[#73795B]">
+                              🎁
+                            </div>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <div className="font-medium text-[#493E33]">{gift.name}</div>
                           <div className="text-[11px] text-[#8C8073] line-clamp-1">{gift.description}</div>
@@ -433,162 +660,22 @@ export default function AdminPage() {
             </div>
           </div>
         )}
-
-        {/* TAB 2: AUDITORIA DE RESERVAS */}
-        {activeTab === "reservations" && (
-          <div className="bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden shadow-soft">
-            <div className="p-4 sm:p-5 border-b border-[#E2D8C9]">
-              <h2 className="font-serif font-medium text-[#493E33] text-base">
-                Histórico Completo de Auditoria
-              </h2>
-              <p className="text-xs text-[#8C8073]">
-                Todas as reservas registradas e histórico de liberação.
-              </p>
-            </div>
-
-            {reservations.length === 0 ? (
-              <div className="p-12 text-center text-xs text-[#8C8073]">
-                Nenhuma reserva registrada até o momento.
-              </div>
-            ) : (
-              <div>
-                {/* Mobile View: Cards */}
-                <div className="sm:hidden divide-y divide-[#E2D8C9]/60">
-                  {reservations.map((res) => {
-                    const gift = res.gifts;
-                    const profile = res.profiles;
-                    const isActive = res.status === "active";
-                    const isCancelled = res.status === "cancelled_by_user";
-                    const dateStr = new Date(res.reserved_at).toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-
-                    return (
-                      <div key={res.id} className="p-4 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h3 className="font-serif font-medium text-base text-[#493E33]">
-                              {gift?.name || "Presente"}
-                            </h3>
-                            <p className="text-xs text-[#6B5D4E]">
-                              {profile?.name || profile?.email || res.user_id}
-                            </p>
-                          </div>
-                          {isActive ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAEEE0] text-[#4E5B36]">
-                              Ativa
-                            </span>
-                          ) : isCancelled ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#EDE6DA] text-[#8C8073]">
-                              Cancelada
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#E8DED0] text-[#6B5D4E]">
-                              Liberada Admin
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] text-[#8C8073] pt-1">
-                          <span>{dateStr}</span>
-                          {isActive && (
-                            <button
-                              onClick={() => setReleasingId(res.id)}
-                              className="px-3 py-1.5 bg-[#F5E4DE] text-[#8C4832] rounded-[6px] font-medium text-xs"
-                            >
-                              Liberar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Desktop View: Table */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-[#EDE6DA] border-b border-[#E2D8C9] text-[#6B5D4E] uppercase text-[10px] tracking-wider">
-                      <tr>
-                        <th className="py-3 px-4">Presente</th>
-                        <th className="py-3 px-4">Convidado</th>
-                        <th className="py-3 px-4">Data/Hora</th>
-                        <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4 text-right">Ação</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E2D8C9]/60">
-                      {reservations.map((res) => {
-                        const gift = res.gifts;
-                        const profile = res.profiles;
-                        const isActive = res.status === "active";
-                        const isCancelled = res.status === "cancelled_by_user";
-                        const dateStr = new Date(res.reserved_at).toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        });
-
-                        return (
-                          <tr key={res.id} className="hover:bg-[#EDE6DA]/40 transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="font-medium text-[#493E33]">{gift?.name || "Presente"}</div>
-                              <div className="text-[11px] text-[#8C8073]">{gift?.category}</div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="text-[#493E33] font-medium">{profile?.name || "Convidado"}</div>
-                              <div className="text-[11px] text-[#8C8073]">{profile?.email || res.user_id}</div>
-                            </td>
-                            <td className="py-3 px-4 text-[#6B5D4E] font-mono">{dateStr}</td>
-                            <td className="py-3 px-4">
-                              {isActive ? (
-                                <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#EAEEE0] text-[#4E5B36]">
-                                  Ativa
-                                </span>
-                              ) : isCancelled ? (
-                                <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EDE6DA] text-[#8C8073]">
-                                  Cancelada
-                                </span>
-                              ) : (
-                                <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#E8DED0] text-[#6B5D4E]">
-                                  Liberada Admin
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              {isActive && (
-                                <button
-                                  onClick={() => setReleasingId(res.id)}
-                                  className="px-3 py-1 bg-[#F5E4DE] hover:bg-[#A9573F] hover:text-white border border-[#A9573F]/30 rounded-[6px] text-xs font-medium text-[#8C4832] transition-colors"
-                                >
-                                  Liberar
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </main>
 
-      {/* MODAL DE CRIAÇÃO / EDIÇÃO DE PRESENTE (Responsivo para telas mobile) */}
+      {/* MODAL DE CRIAÇÃO / EDIÇÃO DE PRESENTE COM UPLOAD DE FOTO */}
       {isGiftModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-[#FFFDFA] rounded-t-[20px] sm:rounded-[20px] border border-[#E2D8C9] p-5 sm:p-8 max-w-lg w-full shadow-floating space-y-4 max-h-[90vh] overflow-y-auto safe-area-bottom">
-            <h2 className="font-serif font-medium text-[#493E33] text-xl sm:text-2xl">
-              {editingGift ? "Editar Presente" : "Novo Presente para o Catálogo"}
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-serif font-medium text-[#493E33] text-xl sm:text-2xl">
+                {editingGift ? "Editar Presente" : "Novo Presente para o Catálogo"}
+              </h2>
+              <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#EAEEE0] text-[#5F6549] font-medium">
+                Ordem #{formDisplayOrder} (automática)
+              </span>
+            </div>
 
-            <form onSubmit={handleSaveGift} className="space-y-3.5 text-xs">
+            <form onSubmit={handleSaveGift} className="space-y-4 text-xs">
               <div className="space-y-1">
                 <label className="font-medium text-[#73795B] uppercase tracking-wider block">Nome do Presente *</label>
                 <input
@@ -601,34 +688,67 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-medium text-[#73795B] uppercase tracking-wider block">Categoria *</label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full p-3 bg-[#FBF8F3] border border-[#C7BCAB] rounded-[8px] text-[16px] text-[#493E33]"
-                  >
-                    <option value="Cozinha">Cozinha</option>
-                    <option value="Mesa e Servir">Mesa e Servir</option>
-                    <option value="Café e Café da Manhã">Café e Café da Manhã</option>
-                    <option value="Limpeza">Limpeza</option>
-                    <option value="Quarto e Banheiro">Quarto e Banheiro</option>
-                    <option value="Organização">Organização</option>
-                    <option value="Itens Coringa">Itens Coringa</option>
-                    <option value="Itens mais pedidos">Itens mais pedidos</option>
-                  </select>
-                </div>
+              <div className="space-y-1">
+                <label className="font-medium text-[#73795B] uppercase tracking-wider block">Categoria *</label>
+                <select
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                  className="w-full p-3 bg-[#FBF8F3] border border-[#C7BCAB] rounded-[8px] text-[16px] text-[#493E33]"
+                >
+                  <option value="Itens mais pedidos">Itens mais pedidos</option>
+                  <option value="Cozinha">Cozinha</option>
+                  <option value="Mesa e Servir">Mesa e Servir</option>
+                  <option value="Café e Café da Manhã">Café e Café da Manhã</option>
+                  <option value="Limpeza">Limpeza</option>
+                  <option value="Quarto e Banheiro">Quarto e Banheiro</option>
+                  <option value="Organização">Organização</option>
+                  <option value="Itens Coringa">Itens Coringa</option>
+                </select>
+              </div>
 
-                <div className="space-y-1">
-                  <label className="font-medium text-[#73795B] uppercase tracking-wider block">Ordem</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={formDisplayOrder}
-                    onChange={(e) => setFormDisplayOrder(Number(e.target.value))}
-                    className="w-full p-3 bg-[#FBF8F3] border border-[#C7BCAB] rounded-[8px] text-[16px] text-[#493E33]"
-                  />
+              {/* UPLOAD DE IMAGEM */}
+              <div className="space-y-2">
+                <label className="font-medium text-[#73795B] uppercase tracking-wider block">
+                  Foto do Presente (Upload direto ou link)
+                </label>
+                
+                <div className="flex items-center gap-3">
+                  {formImageUrl ? (
+                    <div className="relative w-20 h-20 rounded-[8px] overflow-hidden border border-[#E2D8C9] bg-[#EDE6DA] flex-shrink-0">
+                      <img
+                        src={formImageUrl}
+                        alt="Prévia"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormImageUrl("")}
+                        className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center text-[10px]"
+                        title="Remover foto"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-[8px] border-2 border-dashed border-[#C7BCAB] bg-[#FBF8F3] flex flex-col items-center justify-center text-[#8C8073] text-[10px] flex-shrink-0">
+                      <span>Sem foto</span>
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-1.5">
+                    <label className="inline-flex items-center justify-center px-4 py-2.5 bg-[#FFFDFA] hover:bg-[#EDE6DA] border border-[#C7BCAB] rounded-[8px] font-medium text-[#493E33] cursor-pointer transition-colors w-full text-center">
+                      <span>{isUploadingImage ? "Processando foto..." : "📁 Escolher foto do celular / PC"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[11px] text-[#8C8073]">
+                      Formatos aceitos: JPG, PNG, WEBP (até 4MB)
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -639,17 +759,6 @@ export default function AdminPage() {
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="Detalhes ou sugestões..."
-                  className="w-full p-3 bg-[#FBF8F3] border border-[#C7BCAB] rounded-[8px] text-[16px] text-[#493E33]"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-medium text-[#73795B] uppercase tracking-wider block">URL da Imagem (Opcional)</label>
-                <input
-                  type="url"
-                  value={formImageUrl}
-                  onChange={(e) => setFormImageUrl(e.target.value)}
-                  placeholder="https://..."
                   className="w-full p-3 bg-[#FBF8F3] border border-[#C7BCAB] rounded-[8px] text-[16px] text-[#493E33]"
                 />
               </div>
@@ -682,8 +791,8 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="w-1/2 min-h-[48px] rounded-[12px] bg-[#6B7154] hover:bg-[#565B43] text-[#FBF8F3] font-semibold disabled:opacity-50"
+                  disabled={isSubmitting || isUploadingImage}
+                  className="w-1/2 min-h-[48px] rounded-[12px] bg-[#6B7154] hover:bg-[#565B43] text-[#FBF8F3] font-semibold disabled:opacity-50 shadow-soft"
                 >
                   {isSubmitting ? "Salvando..." : "Salvar Presente"}
                 </button>

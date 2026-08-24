@@ -3,6 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+const ADMIN_EMAILS = [
+  "deboragabrielepereira@gmail.com",
+  "matheusbazi01@gmail.com",
+];
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -15,18 +20,28 @@ export async function GET() {
       );
     }
 
-    // Verificar se o usuário autenticado é um administrador ativo
-    const { data: adminRecord, error: adminErr } = await supabase
+    const email = user.email?.toLowerCase().trim() || "";
+    const isAllowlisted = ADMIN_EMAILS.includes(email);
+
+    // Verificar se o usuário autenticado é um administrador
+    const { data: adminRecord } = await (supabase as any)
       .from("administrators")
-      .select("id, role, is_active")
+      .select("user_id, role, is_active")
       .eq("user_id", user.id)
       .eq("is_active", true)
       .maybeSingle();
 
-    // Se não for admin no banco, permite visualização em sandbox/demonstração com dados mockados
-    const isAdmin = Boolean((adminRecord as any)?.is_active);
+    const isAdmin = isAllowlisted || Boolean(adminRecord?.is_active);
 
-    const { data: reservations } = await supabase
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Acesso restrito aos noivos/administradores." },
+        { status: 403 }
+      );
+    }
+
+    // Consulta todas as reservas registradas
+    const { data: reservations, error: resError } = await (supabase as any)
       .from("reservations")
       .select(`
         id,
@@ -37,26 +52,57 @@ export async function GET() {
         cancel_until,
         cancelled_at,
         released_at,
-        released_by,
         gifts (
           id,
           slug,
           name,
           category,
           image_url
-        ),
-        profiles:user_id (
-          id,
-          name,
-          email
         )
       `)
       .order("reserved_at", { ascending: false });
 
+    if (resError) {
+      console.error("Erro ao buscar reservas no admin:", resError.message);
+      return NextResponse.json({
+        success: true,
+        isAdmin: true,
+        data: [],
+      });
+    }
+
+    // Buscar perfis para obter nomes e e-mails de quem reservou
+    const userIds = Array.from(new Set((reservations || []).map((r: any) => r.user_id).filter(Boolean)));
+    
+    let profilesMap: Record<string, { name: string; email: string }> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await (supabase as any)
+        .from("profiles")
+        .select("id, name, email")
+        .in("id", userIds);
+
+      if (profiles) {
+        profiles.forEach((p: any) => {
+          profilesMap[p.id] = { name: p.name, email: p.email };
+        });
+      }
+    }
+
+    const formatted = (reservations || []).map((r: any) => {
+      const profile = profilesMap[r.user_id];
+      return {
+        ...r,
+        profiles: profile || {
+          name: "Convidado",
+          email: r.user_id,
+        },
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      isAdmin,
-      data: reservations || [],
+      isAdmin: true,
+      data: formatted,
     });
   } catch (err: unknown) {
     console.error("Erro na rota /api/admin/reservations:", err);
