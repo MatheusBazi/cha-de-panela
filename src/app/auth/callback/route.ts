@@ -17,15 +17,22 @@ export async function GET(request: NextRequest) {
   const error = requestUrl.searchParams.get("error");
   const errorDescription = requestUrl.searchParams.get("error_description");
 
+  // Detecção robusta da origem pública em produção (Vercel / Reverse Proxy)
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+  const origin = forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : requestUrl.origin;
+
   // Tratamento rigoroso de erro do provedor (ex: usuário cancelou o consentimento Google)
   if (error) {
     console.warn("OAuth Callback Provider Error:", error, errorDescription);
     const sanitizedError = encodeURIComponent(errorDescription || error);
-    return NextResponse.redirect(new URL(`/?auth_error=${sanitizedError}`, requestUrl.origin));
+    return NextResponse.redirect(new URL(`/?auth_error=${sanitizedError}`, origin));
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL("/?auth_error=missing_code", requestUrl.origin));
+    return NextResponse.redirect(new URL("/?auth_error=missing_code", origin));
   }
 
   // Troca atômica de código por sessão no servidor
@@ -72,5 +79,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(new URL(safeNext, requestUrl.origin));
+  return NextResponse.redirect(new URL(safeNext, origin));
 }
