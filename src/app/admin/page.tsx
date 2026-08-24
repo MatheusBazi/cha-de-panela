@@ -18,13 +18,13 @@ interface AdminReservation {
   released_at?: string;
   gifts?: {
     id: string;
-    slug: string;
+    slug?: string;
     name: string;
     category: string;
-    image_url: string;
+    image_url?: string;
   };
   profiles?: {
-    id: string;
+    id?: string;
     name: string;
     email: string;
   };
@@ -33,6 +33,7 @@ interface AdminReservation {
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<"reservations" | "gifts">("reservations");
+  const [reservationFilter, setReservationFilter] = useState<"active" | "all">("active");
   const [reservations, setReservations] = useState<AdminReservation[]>([]);
   const [gifts, setGifts] = useState<PublicGift[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +41,7 @@ export default function AdminPage() {
   // Modais de Presentes
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const [editingGift, setEditingGift] = useState<PublicGift | null>(null);
-  const [deactivatingGift, setDeactivatingGift] = useState<PublicGift | null>(null);
+  const [deletingGift, setDeletingGift] = useState<PublicGift | null>(null);
 
   // Form State
   const [formName, setFormName] = useState("");
@@ -61,76 +62,32 @@ export default function AdminPage() {
 
   async function loadData() {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
 
     try {
-      const [resResponse, giftResponse] = await Promise.allSettled([
+      const [resResponse, giftResponse] = await Promise.all([
         fetch("/api/admin/reservations", { cache: "no-store" }),
         fetch("/api/admin/gifts", { cache: "no-store" }),
       ]);
 
-      let loadedReservations: AdminReservation[] = [];
-
-      if (resResponse.status === "fulfilled" && resResponse.value.ok) {
-        const resJson = await resResponse.value.json();
+      if (resResponse.ok) {
+        const resJson = await resResponse.json();
         if (resJson.success && Array.isArray(resJson.data)) {
-          loadedReservations = resJson.data;
+          setReservations(resJson.data);
         }
       }
 
-      // Se a rota da API retornou vazia mas o usuário está autenticado, tenta consulta direta pelo cliente
-      if (loadedReservations.length === 0 && user) {
-        const { data: directRes } = await (supabase as any)
-          .from("reservations")
-          .select(`
-            id,
-            gift_id,
-            user_id,
-            status,
-            reserved_at,
-            cancel_until,
-            cancelled_at,
-            released_at,
-            gifts (
-              id,
-              slug,
-              name,
-              category,
-              image_url
-            )
-          `)
-          .order("reserved_at", { ascending: false });
-
-        if (directRes && directRes.length > 0) {
-          loadedReservations = directRes.map((r: any) => ({
-            ...r,
-            profiles: {
-              name: "Convidado",
-              email: r.user_id,
-            },
-          }));
-        }
-      }
-
-      setReservations(loadedReservations);
-
-      if (giftResponse.status === "fulfilled" && giftResponse.value.ok) {
-        const giftJson = await giftResponse.value.json();
+      if (giftResponse.ok) {
+        const giftJson = await giftResponse.json();
         if (giftJson.success && Array.isArray(giftJson.data) && giftJson.data.length > 0) {
           setGifts(giftJson.data);
         } else {
-          const pubRes = await fetch("/api/gifts", { cache: "no-store" });
-          const pubJson = await pubRes.json();
-          setGifts(pubJson.data || REAL_GIFTS);
+          setGifts(REAL_GIFTS);
         }
       } else {
-        const pubRes = await fetch("/api/gifts", { cache: "no-store" });
-        const pubJson = await pubRes.json();
-        setGifts(pubJson.data || REAL_GIFTS);
+        setGifts(REAL_GIFTS);
       }
-    } catch (err) {
-      console.warn("Erro ao carregar dados do admin:", err);
+    } catch {
       setGifts(REAL_GIFTS);
     } finally {
       setLoading(false);
@@ -180,7 +137,6 @@ export default function AdminPage() {
       return;
     }
 
-    // Limite de 4MB
     if (file.size > 4 * 1024 * 1024) {
       alert("A imagem selecionada é muito pesada. Escolha uma foto de até 4MB.");
       return;
@@ -233,7 +189,7 @@ export default function AdminPage() {
 
       if (res.ok && data.success) {
         setIsGiftModalOpen(false);
-        loadData();
+        await loadData();
       } else {
         setErrorMessage(data.error || "Erro ao salvar presente.");
       }
@@ -244,7 +200,7 @@ export default function AdminPage() {
     }
   }
 
-  async function handleDeactivateGift(giftId: string) {
+  async function handleDeleteGift(giftId: string) {
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/admin/gifts", {
@@ -254,34 +210,14 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setDeactivatingGift(null);
-        loadData();
+        setGifts((prev) => prev.filter((g) => g.id !== giftId));
+        setDeletingGift(null);
+        await loadData();
       } else {
-        alert(data.error || "Erro ao desativar presente.");
+        alert(data.error || "Erro ao excluir presente.");
       }
     } catch {
-      alert("Erro de conexão ao desativar.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handleReactivateGift(giftId: string) {
-    setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/gifts", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: giftId }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        loadData();
-      } else {
-        alert(data.error || "Erro ao reativar presente.");
-      }
-    } catch {
-      alert("Erro de conexão ao reativar.");
+      alert("Erro de conexão ao excluir presente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -297,6 +233,10 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        // Remove imediatamente da lista local
+        setReservations((prev) =>
+          prev.map((r) => (r.id === reservationId ? { ...r, status: "released_by_admin" } : r))
+        );
         setReleasingId(null);
         await loadData();
       } else {
@@ -310,6 +250,7 @@ export default function AdminPage() {
   }
 
   const activeReservations = reservations.filter((r) => r.status === "active");
+  const displayedReservations = reservationFilter === "active" ? activeReservations : reservations;
 
   return (
     <div className="min-h-screen bg-[#F4EFE7] flex flex-col selection:bg-sage-200 text-[#493E33]">
@@ -357,8 +298,8 @@ export default function AdminPage() {
             <p className="font-serif font-medium text-xl sm:text-2xl text-[#73795B]">{gifts.filter((g) => g.is_active !== false).length}</p>
           </div>
           <div className="bg-[#FBF8F3] p-4 sm:p-5 rounded-[12px] border border-[#E2D8C9] space-y-1 shadow-soft">
-            <span className="text-[11px] sm:text-xs text-[#8C8073]">Itens Inativos</span>
-            <p className="font-serif font-medium text-xl sm:text-2xl text-[#8C8073]">{gifts.filter((g) => g.is_active === false).length}</p>
+            <span className="text-[11px] sm:text-xs text-[#8C8073]">Total Histórico Reservas</span>
+            <p className="font-serif font-medium text-xl sm:text-2xl text-[#8C8073]">{reservations.length}</p>
           </div>
         </div>
 
@@ -366,52 +307,94 @@ export default function AdminPage() {
         <div className="flex items-center gap-2 border-b border-[#E2D8C9] pb-2">
           <button
             onClick={() => setActiveTab("reservations")}
-            className={`min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold transition-all flex items-center ${
+            className={`min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold transition-all flex items-center gap-1.5 ${
               activeTab === "reservations"
                 ? "bg-[#6B7154] text-[#FBF8F3] shadow-soft"
                 : "bg-transparent text-[#6B5D4E] hover:bg-[#EDE6DA]"
             }`}
           >
-            Itens Reservados ({reservations.length})
+            <span>Itens Reservados</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeTab === "reservations" ? "bg-white/20 text-white" : "bg-[#EDE6DA] text-[#6B5D4E]"}`}>
+              {activeReservations.length}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab("gifts")}
-            className={`min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold transition-all flex items-center ${
+            className={`min-h-[44px] px-4 py-2 rounded-[8px] text-xs font-semibold transition-all flex items-center gap-1.5 ${
               activeTab === "gifts"
                 ? "bg-[#6B7154] text-[#FBF8F3] shadow-soft"
                 : "bg-transparent text-[#6B5D4E] hover:bg-[#EDE6DA]"
             }`}
           >
-            Gerenciar Catálogo ({gifts.length})
+            <span>Gerenciar Catálogo</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeTab === "gifts" ? "bg-white/20 text-white" : "bg-[#EDE6DA] text-[#6B5D4E]"}`}>
+              {gifts.length}
+            </span>
           </button>
         </div>
 
-        {/* TAB 1: ITENS RESERVADOS (AUDITORIA DE QUEM RESERVOU O QUE) */}
+        {/* TAB 1: ITENS RESERVADOS (FILTRADO POR ATIVAS POR PADRÃO) */}
         {activeTab === "reservations" && (
-          <div className="bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden shadow-soft">
-            <div className="p-4 sm:p-5 border-b border-[#E2D8C9]">
-              <h2 className="font-serif font-medium text-[#493E33] text-base">
-                Quem Reservou Cada Presente
-              </h2>
-              <p className="text-xs text-[#8C8073]">
-                Lista de todos os presentes escolhidos pelos convidados com identificação e data.
-              </p>
+          <div className="bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden shadow-soft space-y-0">
+            <div className="p-4 sm:p-5 border-b border-[#E2D8C9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-serif font-medium text-[#493E33] text-base">
+                  {reservationFilter === "active" ? "Presentes com Reserva Ativa no Momento" : "Histórico Geral de Reservas"}
+                </h2>
+                <p className="text-xs text-[#8C8073]">
+                  {reservationFilter === "active"
+                    ? "Exibindo apenas presentes que estão atualmente reservados. Itens liberados voltam para a lista e saem desta tela."
+                    : "Exibindo todas as reservas, incluindo as canceladas pelos convidados e liberadas pelos noivos."}
+                </p>
+              </div>
+
+              {/* Toggle de Filtro Ativas vs Histórico */}
+              <div className="flex items-center gap-1 bg-[#EDE6DA] p-1 rounded-[8px] self-start sm:self-auto flex-shrink-0">
+                <button
+                  onClick={() => setReservationFilter("active")}
+                  className={`px-3 py-1.5 rounded-[6px] text-xs font-medium transition-all ${
+                    reservationFilter === "active"
+                      ? "bg-[#FFFDFA] text-[#493E33] shadow-xs font-semibold"
+                      : "text-[#6B5D4E] hover:text-[#493E33]"
+                  }`}
+                >
+                  Apenas Ativas ({activeReservations.length})
+                </button>
+                <button
+                  onClick={() => setReservationFilter("all")}
+                  className={`px-3 py-1.5 rounded-[6px] text-xs font-medium transition-all ${
+                    reservationFilter === "all"
+                      ? "bg-[#FFFDFA] text-[#493E33] shadow-xs font-semibold"
+                      : "text-[#6B5D4E] hover:text-[#493E33]"
+                  }`}
+                >
+                  Ver Histórico ({reservations.length})
+                </button>
+              </div>
             </div>
 
             {loading ? (
-              <div className="p-12 text-center text-xs text-[#8C8073] animate-pulse">
-                Carregando reservas dos convidados...
+              <div className="p-12 text-center text-xs text-[#8C8073]">
+                Carregando reservas...
               </div>
-            ) : reservations.length === 0 ? (
+            ) : displayedReservations.length === 0 ? (
               <div className="p-12 text-center text-xs text-[#8C8073] space-y-2">
-                <p className="text-sm font-serif text-[#493E33]">Nenhum presente foi reservado ainda.</p>
-                <p>Assim que um convidado confirmar a escolha, os dados de quem presenteou aparecerão aqui.</p>
+                <p className="text-sm font-serif text-[#493E33]">
+                  {reservationFilter === "active"
+                    ? "Nenhum presente possui reserva ativa no momento."
+                    : "Nenhum registro de reserva encontrado."}
+                </p>
+                <p>
+                  {reservationFilter === "active"
+                    ? "Todos os presentes estão livres e disponíveis para os convidados escolherem!"
+                    : "Assim que um convidado escolher um presente, ele será registrado aqui."}
+                </p>
               </div>
             ) : (
               <div>
                 {/* Mobile View: Cards */}
                 <div className="sm:hidden divide-y divide-[#E2D8C9]/60">
-                  {reservations.map((res) => {
+                  {displayedReservations.map((res) => {
                     const gift = res.gifts;
                     const profile = res.profiles;
                     const isActive = res.status === "active";
@@ -492,7 +475,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E2D8C9]/60">
-                      {reservations.map((res) => {
+                      {displayedReservations.map((res) => {
                         const gift = res.gifts;
                         const profile = res.profiles;
                         const isActive = res.status === "active";
@@ -552,7 +535,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 2: GERENCIAMENTO DE PRESENTES (CRUD) */}
+        {/* TAB 2: GERENCIAMENTO DE PRESENTES (CRUD COM EXCLUSÃO DEFINITIVA) */}
         {activeTab === "gifts" && (
           <div className="bg-[#FBF8F3] rounded-[12px] border border-[#E2D8C9] overflow-hidden shadow-soft">
             <div className="p-4 sm:p-5 border-b border-[#E2D8C9]">
@@ -560,74 +543,53 @@ export default function AdminPage() {
                 Gerenciador de Presentes
               </h2>
               <p className="text-xs text-[#8C8073]">
-                Adicione novos presentes, edite informações ou envie fotos personalizadas.
+                Adicione novos presentes, edite informações ou exclua itens da lista.
               </p>
             </div>
 
             {/* Mobile View: Cards */}
             <div className="sm:hidden divide-y divide-[#E2D8C9]/60">
-              {gifts.map((gift) => {
-                const isActive = gift.is_active !== false;
-                return (
-                  <div key={gift.id} className="p-4 space-y-2.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {gift.image_url ? (
-                          <img
-                            src={gift.image_url}
-                            alt={gift.name}
-                            className="w-12 h-12 rounded-[8px] object-cover bg-[#EDE6DA] flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-[8px] bg-[#EDE6DA] flex items-center justify-center text-[#73795B] flex-shrink-0">
-                            🎁
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <span className="text-[10px] text-[#8C8073] uppercase tracking-wider block">
-                            #{gift.display_order} · {gift.category}
-                          </span>
-                          <h3 className="font-serif font-medium text-base text-[#493E33] truncate">
-                            {gift.name}
-                          </h3>
+              {gifts.map((gift) => (
+                <div key={gift.id} className="p-4 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {gift.image_url ? (
+                        <img
+                          src={gift.image_url}
+                          alt={gift.name}
+                          className="w-12 h-12 rounded-[8px] object-cover bg-[#EDE6DA] flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-[8px] bg-[#EDE6DA] flex items-center justify-center text-[#73795B] flex-shrink-0">
+                          🎁
                         </div>
+                      )}
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-[#8C8073] uppercase tracking-wider block">
+                          #{gift.display_order} · {gift.category}
+                        </span>
+                        <h3 className="font-serif font-medium text-base text-[#493E33] truncate">
+                          {gift.name}
+                        </h3>
                       </div>
-                      {isActive ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAEEE0] text-[#4E5B36] flex-shrink-0">
-                          Ativo
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#EDE6DA] text-[#8C8073] flex-shrink-0">
-                          Inativo
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={() => openEditModal(gift)}
-                        className="flex-1 min-h-[40px] bg-[#FFFDFA] border border-[#C7BCAB] rounded-[8px] text-xs font-medium text-[#493E33]"
-                      >
-                        Editar
-                      </button>
-                      {isActive ? (
-                        <button
-                          onClick={() => setDeactivatingGift(gift)}
-                          className="flex-1 min-h-[40px] bg-[#F5E4DE] text-[#8C4832] border border-[#A9573F]/30 rounded-[8px] text-xs font-medium"
-                        >
-                          Remover
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleReactivateGift(gift.id)}
-                          className="flex-1 min-h-[40px] bg-[#EAEEE0] text-[#4E5B36] border border-[#969E78]/30 rounded-[8px] text-xs font-medium"
-                        >
-                          Reativar
-                        </button>
-                      )}
                     </div>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => openEditModal(gift)}
+                      className="flex-1 min-h-[40px] bg-[#FFFDFA] border border-[#C7BCAB] rounded-[8px] text-xs font-medium text-[#493E33]"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setDeletingGift(gift)}
+                      className="flex-1 min-h-[40px] bg-[#F5E4DE] text-[#8C4832] border border-[#A9573F]/30 rounded-[8px] text-xs font-medium"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Desktop View: Table */}
@@ -639,72 +601,47 @@ export default function AdminPage() {
                     <th className="py-3 px-4">Foto</th>
                     <th className="py-3 px-4">Presente</th>
                     <th className="py-3 px-4">Categoria</th>
-                    <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E2D8C9]/60">
-                  {gifts.map((gift) => {
-                    const isActive = gift.is_active !== false;
-
-                    return (
-                      <tr key={gift.id} className="hover:bg-[#EDE6DA]/40 transition-colors">
-                        <td className="py-3 px-4 font-mono text-[#8C8073]">#{gift.display_order}</td>
-                        <td className="py-3 px-4">
-                          {gift.image_url ? (
-                            <img
-                              src={gift.image_url}
-                              alt={gift.name}
-                              className="w-10 h-10 rounded-[6px] object-cover bg-[#EDE6DA]"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-[6px] bg-[#EDE6DA] flex items-center justify-center text-xs text-[#73795B]">
-                              🎁
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="font-medium text-[#493E33]">{gift.name}</div>
-                          <div className="text-[11px] text-[#8C8073] line-clamp-1">{gift.description}</div>
-                        </td>
-                        <td className="py-3 px-4 text-[#6B5D4E]">{gift.category}</td>
-                        <td className="py-3 px-4">
-                          {isActive ? (
-                            <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#EAEEE0] text-[#4E5B36]">
-                              Ativo
-                            </span>
-                          ) : (
-                            <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EDE6DA] text-[#8C8073]">
-                              Inativo
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right space-x-2">
-                          <button
-                            onClick={() => openEditModal(gift)}
-                            className="px-2.5 py-1 bg-[#FFFDFA] hover:bg-[#EDE6DA] border border-[#C7BCAB] rounded-[6px] text-xs font-medium text-[#493E33]"
-                          >
-                            Editar
-                          </button>
-                          {isActive ? (
-                            <button
-                              onClick={() => setDeactivatingGift(gift)}
-                              className="px-2.5 py-1 bg-[#F5E4DE] hover:bg-[#A9573F] hover:text-white border border-[#A9573F]/30 rounded-[6px] text-xs font-medium text-[#8C4832] transition-colors"
-                            >
-                              Remover
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleReactivateGift(gift.id)}
-                              className="px-2.5 py-1 bg-[#EAEEE0] hover:bg-[#6B7154] hover:text-white border border-[#969E78]/30 rounded-[6px] text-xs font-medium text-[#4E5B36] transition-colors"
-                            >
-                              Reativar
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {gifts.map((gift) => (
+                    <tr key={gift.id} className="hover:bg-[#EDE6DA]/40 transition-colors">
+                      <td className="py-3 px-4 font-mono text-[#8C8073]">#{gift.display_order}</td>
+                      <td className="py-3 px-4">
+                        {gift.image_url ? (
+                          <img
+                            src={gift.image_url}
+                            alt={gift.name}
+                            className="w-10 h-10 rounded-[6px] object-cover bg-[#EDE6DA]"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-[6px] bg-[#EDE6DA] flex items-center justify-center text-xs text-[#73795B]">
+                            🎁
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-[#493E33]">{gift.name}</div>
+                        <div className="text-[11px] text-[#8C8073] line-clamp-1">{gift.description}</div>
+                      </td>
+                      <td className="py-3 px-4 text-[#6B5D4E]">{gift.category}</td>
+                      <td className="py-3 px-4 text-right space-x-2">
+                        <button
+                          onClick={() => openEditModal(gift)}
+                          className="px-2.5 py-1 bg-[#FFFDFA] hover:bg-[#EDE6DA] border border-[#C7BCAB] rounded-[6px] text-xs font-medium text-[#493E33]"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => setDeletingGift(gift)}
+                          className="px-2.5 py-1 bg-[#F5E4DE] hover:bg-[#A9573F] hover:text-white border border-[#A9573F]/30 rounded-[6px] text-xs font-medium text-[#8C4832] transition-colors"
+                        >
+                          Excluir
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -712,7 +649,7 @@ export default function AdminPage() {
         )}
       </main>
 
-      {/* MODAL DE CRIAÇÃO / EDIÇÃO DE PRESENTE COM UPLOAD DE FOTO */}
+      {/* MODAL DE CRIAÇÃO / EDIÇÃO DE PRESENTE */}
       {isGiftModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-[#FFFDFA] rounded-t-[20px] sm:rounded-[20px] border border-[#E2D8C9] p-5 sm:p-8 max-w-lg w-full shadow-floating space-y-4 max-h-[90vh] overflow-y-auto safe-area-bottom">
@@ -759,7 +696,7 @@ export default function AdminPage() {
               {/* UPLOAD DE IMAGEM */}
               <div className="space-y-2">
                 <label className="font-medium text-[#73795B] uppercase tracking-wider block">
-                  Foto do Presente (Upload direto ou link)
+                  Foto do Presente (Upload direto)
                 </label>
                 
                 <div className="flex items-center gap-3">
@@ -852,50 +789,45 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* MODAL DE CONFIRMAÇÃO DE REMOÇÃO */}
-      {deactivatingGift && (
+      {/* MODAL DE EXCLUSÃO DEFINITIVA DE PRESENTE */}
+      {deletingGift && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-[#FFFDFA] rounded-t-[20px] sm:rounded-[20px] border border-[#E2D8C9] p-6 sm:p-8 max-w-md w-full shadow-floating space-y-4 safe-area-bottom">
             <h2 className="font-serif font-medium text-[#493E33] text-xl">
-              Remover “{deactivatingGift.name}” da lista?
+              Excluir “{deletingGift.name}” definitivamente?
             </h2>
             <p className="text-xs text-[#6B5D4E] leading-relaxed">
-              Ele deixará de aparecer para os convidados. O histórico existente será preservado.
+              Este presente será removido permanentemente do catálogo e não aparecerá mais em nenhuma lista.
             </p>
-            {deactivatingGift.is_reserved && (
-              <div className="p-3.5 bg-[#F6EBDA] border border-[#C08A3E]/45 rounded-[8px] text-xs text-[#7A5620]">
-                ⚠️ <strong>Atenção:</strong> Este presente possui uma reserva ativa. Removê-lo do catálogo não cancela a reserva existente.
-              </div>
-            )}
             <div className="flex items-center gap-3 pt-2">
               <button
-                onClick={() => setDeactivatingGift(null)}
+                onClick={() => setDeletingGift(null)}
                 disabled={isSubmitting}
                 className="w-1/2 min-h-[48px] rounded-[12px] bg-[#EDE6DA] hover:bg-[#E2D8C9] text-[#493E33] text-xs font-medium"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => handleDeactivateGift(deactivatingGift.id)}
+                onClick={() => handleDeleteGift(deletingGift.id)}
                 disabled={isSubmitting}
                 className="w-1/2 min-h-[48px] rounded-[12px] bg-[#A9573F] hover:bg-[#8C4832] text-white text-xs font-semibold disabled:opacity-50"
               >
-                {isSubmitting ? "Removendo..." : "Remover da lista"}
+                {isSubmitting ? "Excluindo..." : "Excluir Definitivamente"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL DE LIBERAÇÃO DE RESERVA */}
+      {/* MODAL DE CONFIRMAÇÃO DE LIBERAÇÃO DE RESERVA */}
       {releasingId && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-[#FFFDFA] rounded-t-[20px] sm:rounded-[20px] border border-[#E2D8C9] p-6 sm:p-8 max-w-md w-full shadow-floating space-y-4 safe-area-bottom">
             <h2 className="font-serif font-medium text-[#493E33] text-xl">
-              Liberar reserva administrativamente?
+              Liberar presente para a lista pública?
             </h2>
             <p className="text-xs text-[#6B5D4E] leading-relaxed">
-              O presente voltará a ficar disponível para outros convidados. O histórico de auditoria será preservado.
+              O presente sairá da lista de reservas ativas e voltará a ficar disponível para qualquer convidado escolher.
             </p>
             <div className="flex items-center gap-3 pt-2">
               <button
@@ -908,9 +840,9 @@ export default function AdminPage() {
               <button
                 onClick={() => handleReleaseReservation(releasingId)}
                 disabled={isSubmitting}
-                className="w-1/2 min-h-[48px] rounded-[12px] bg-[#A9573F] hover:bg-[#8C4832] text-white text-xs font-semibold disabled:opacity-50"
+                className="w-1/2 min-h-[48px] rounded-[12px] bg-[#6B7154] hover:bg-[#565B43] text-white text-xs font-semibold disabled:opacity-50"
               >
-                {isSubmitting ? "Liberando..." : "Confirmar liberação"}
+                {isSubmitting ? "Liberando..." : "Confirmar e Liberar"}
               </button>
             </div>
           </div>

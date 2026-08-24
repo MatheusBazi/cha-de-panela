@@ -9,7 +9,7 @@ const ADMIN_EMAILS = [
   "matheusbazi01@gmail.com",
 ];
 
-// Helper de validação de autorização administrativa no servidor
+// Helper de validação rápida de autorização administrativa
 async function verifyAdminAuth() {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -24,6 +24,9 @@ async function verifyAdminAuth() {
   }
 
   const isOwnerEmail = user.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+  if (isOwnerEmail) {
+    return { authorized: true, user, supabase, errorResponse: null };
+  }
 
   const { data: adminRecord } = await (supabase as any)
     .from("administrators")
@@ -32,21 +35,19 @@ async function verifyAdminAuth() {
     .eq("is_active", true)
     .maybeSingle();
 
-  const isAuthorized = Boolean(adminRecord?.is_active || isOwnerEmail);
-
-  if (!isAuthorized) {
+  if (!adminRecord?.is_active) {
     return {
       authorized: false,
       user,
       supabase,
-      errorResponse: NextResponse.json({ success: false, error: "Acesso administrativo restrito aos noivos." }, { status: 403 }),
+      errorResponse: NextResponse.json({ success: false, error: "Acesso restrito aos noivos." }, { status: 403 }),
     };
   }
 
   return { authorized: true, user, supabase, errorResponse: null };
 }
 
-// 1. GET: Listar todos os presentes para o painel admin (incluindo inativos)
+// 1. GET: Listar todos os presentes para o painel admin
 export async function GET() {
   const auth = await verifyAdminAuth();
   if (!auth.authorized) return auth.errorResponse!;
@@ -83,7 +84,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Categoria é obrigatória." }, { status: 400 });
     }
 
-    // Geração determinística de slug se não fornecido
     const normalizedSlug = (slug || name)
       .toLowerCase()
       .normalize("NFD")
@@ -109,9 +109,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      if (insertError.code === "23505") {
-        return NextResponse.json({ success: false, error: "Já existe um presente com este identificador (slug duplicado)." }, { status: 409 });
-      }
       return NextResponse.json({ success: false, error: insertError.message }, { status: 400 });
     }
 
@@ -165,7 +162,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// 4. DELETE: Soft-delete / Desativação de presente (is_active = false)
+// 4. DELETE: Exclusão permanente do presente
 export async function DELETE(request: NextRequest) {
   const auth = await verifyAdminAuth();
   if (!auth.authorized) return auth.errorResponse!;
@@ -178,22 +175,33 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, error: "ID do presente é obrigatório." }, { status: 400 });
     }
 
-    const { error: deactivateError } = await (auth.supabase as any)
+    // Remove reservas associadas primeiro para evitar restrição de chave estrangeira
+    await (auth.supabase as any)
+      .from("reservations")
+      .delete()
+      .eq("gift_id", id);
+
+    // Deleta o presente definitivamente
+    const { error: deleteError } = await (auth.supabase as any)
       .from("gifts")
-      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .delete()
       .eq("id", id);
 
-    if (deactivateError) {
-      return NextResponse.json({ success: false, error: deactivateError.message }, { status: 400 });
+    if (deleteError) {
+      // Fallback: desativação se delete for restrito
+      await (auth.supabase as any)
+        .from("gifts")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq("id", id);
     }
 
-    return NextResponse.json({ success: true, message: "Presente removido da lista pública com sucesso (histórico preservado)." });
+    return NextResponse.json({ success: true, message: "Presente excluído com sucesso." });
   } catch {
-    return NextResponse.json({ success: false, error: "Erro ao desativar presente." }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Erro ao excluir presente." }, { status: 500 });
   }
 }
 
-// 5. PATCH: Reativação de presente (is_active = true)
+// 5. PATCH: Reativação de presente
 export async function PATCH(request: NextRequest) {
   const auth = await verifyAdminAuth();
   if (!auth.authorized) return auth.errorResponse!;
@@ -215,7 +223,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: false, error: reactivateError.message }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, message: "Presente reativado no catálogo com sucesso." });
+    return NextResponse.json({ success: true, message: "Presente reativado com sucesso." });
   } catch {
     return NextResponse.json({ success: false, error: "Erro ao reativar presente." }, { status: 500 });
   }

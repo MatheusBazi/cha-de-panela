@@ -13,7 +13,33 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    // 1. Tentar primeiro via RPC com SECURITY DEFINER (imune a bloqueios de RLS)
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: "Acesso não autorizado." },
+        { status: 401 }
+      );
+    }
+
+    const email = user.email?.toLowerCase().trim() || "";
+    const isAllowlisted = ADMIN_EMAILS.includes(email);
+
+    if (!isAllowlisted) {
+      const { data: adminRecord } = await (supabase as any)
+        .from("administrators")
+        .select("user_id, is_active")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!adminRecord?.is_active) {
+        return NextResponse.json(
+          { success: false, error: "Acesso restrito aos noivos." },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 1. Tentar primeiro via RPC com SECURITY DEFINER (mais rápida e completa)
     const { data: rpcRows, error: rpcErr } = await (supabase.rpc as any)("get_all_reservations_admin");
 
     if (!rpcErr && Array.isArray(rpcRows) && rpcRows.length > 0) {
@@ -45,7 +71,7 @@ export async function GET() {
       });
     }
 
-    // 2. Fallback: consulta direta à tabela 'reservations'
+    // 2. Fallback: consulta direta à tabela reservations
     const { data: reservations, error: resError } = await (supabase as any)
       .from("reservations")
       .select(`
@@ -69,6 +95,11 @@ export async function GET() {
 
     if (resError) {
       console.warn("Aviso ao buscar reservas:", resError.message);
+      return NextResponse.json({
+        success: true,
+        isAdmin: true,
+        data: [],
+      });
     }
 
     const userIds = Array.from(new Set((reservations || []).map((r: any) => r.user_id).filter(Boolean)));
