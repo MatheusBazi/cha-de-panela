@@ -66,28 +66,66 @@ export default function AdminPage() {
 
     try {
       const [resResponse, giftResponse] = await Promise.allSettled([
-        fetch("/api/admin/reservations"),
-        fetch("/api/admin/gifts"),
+        fetch("/api/admin/reservations", { cache: "no-store" }),
+        fetch("/api/admin/gifts", { cache: "no-store" }),
       ]);
+
+      let loadedReservations: AdminReservation[] = [];
 
       if (resResponse.status === "fulfilled" && resResponse.value.ok) {
         const resJson = await resResponse.value.json();
         if (resJson.success && Array.isArray(resJson.data)) {
-          setReservations(resJson.data);
+          loadedReservations = resJson.data;
         }
       }
+
+      // Se a rota da API retornou vazia mas o usuário está autenticado, tenta consulta direta pelo cliente
+      if (loadedReservations.length === 0 && user) {
+        const { data: directRes } = await (supabase as any)
+          .from("reservations")
+          .select(`
+            id,
+            gift_id,
+            user_id,
+            status,
+            reserved_at,
+            cancel_until,
+            cancelled_at,
+            released_at,
+            gifts (
+              id,
+              slug,
+              name,
+              category,
+              image_url
+            )
+          `)
+          .order("reserved_at", { ascending: false });
+
+        if (directRes && directRes.length > 0) {
+          loadedReservations = directRes.map((r: any) => ({
+            ...r,
+            profiles: {
+              name: "Convidado",
+              email: r.user_id,
+            },
+          }));
+        }
+      }
+
+      setReservations(loadedReservations);
 
       if (giftResponse.status === "fulfilled" && giftResponse.value.ok) {
         const giftJson = await giftResponse.value.json();
         if (giftJson.success && Array.isArray(giftJson.data) && giftJson.data.length > 0) {
           setGifts(giftJson.data);
         } else {
-          const pubRes = await fetch("/api/gifts");
+          const pubRes = await fetch("/api/gifts", { cache: "no-store" });
           const pubJson = await pubRes.json();
           setGifts(pubJson.data || REAL_GIFTS);
         }
       } else {
-        const pubRes = await fetch("/api/gifts");
+        const pubRes = await fetch("/api/gifts", { cache: "no-store" });
         const pubJson = await pubRes.json();
         setGifts(pubJson.data || REAL_GIFTS);
       }

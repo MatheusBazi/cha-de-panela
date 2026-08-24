@@ -23,7 +23,25 @@ export async function GET() {
     const email = user.email?.toLowerCase().trim() || "";
     const isAllowlisted = ADMIN_EMAILS.includes(email);
 
-    // Verificar se o usuário autenticado é um administrador
+    // Auto-bootstrap: se for um dos e-mails autorizados, garante inserção em administrators
+    if (isAllowlisted) {
+      try {
+        await (supabase as any).from("administrators").upsert(
+          {
+            user_id: user.id,
+            email: email,
+            role: "owner",
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+      } catch (upsertErr) {
+        console.warn("Aviso ao sincronizar administrador:", upsertErr);
+      }
+    }
+
+    // Verificar se o usuário autenticado é um administrador ativo
     const { data: adminRecord } = await (supabase as any)
       .from("administrators")
       .select("user_id, role, is_active")
@@ -76,15 +94,19 @@ export async function GET() {
     
     let profilesMap: Record<string, { name: string; email: string }> = {};
     if (userIds.length > 0) {
-      const { data: profiles } = await (supabase as any)
-        .from("profiles")
-        .select("id, name, email")
-        .in("id", userIds);
+      try {
+        const { data: profiles } = await (supabase as any)
+          .from("profiles")
+          .select("id, name, email")
+          .in("id", userIds);
 
-      if (profiles) {
-        profiles.forEach((p: any) => {
-          profilesMap[p.id] = { name: p.name, email: p.email };
-        });
+        if (profiles) {
+          profiles.forEach((p: any) => {
+            profilesMap[p.id] = { name: p.name, email: p.email };
+          });
+        }
+      } catch (profErr) {
+        console.warn("Aviso ao buscar perfis:", profErr);
       }
     }
 
