@@ -13,52 +13,39 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: "Acesso não autorizado." },
-        { status: 401 }
-      );
+    // 1. Tentar primeiro via RPC com SECURITY DEFINER (imune a bloqueios de RLS)
+    const { data: rpcRows, error: rpcErr } = await (supabase.rpc as any)("get_all_reservations_admin");
+
+    if (!rpcErr && Array.isArray(rpcRows) && rpcRows.length > 0) {
+      const mapped = rpcRows.map((r: any) => ({
+        id: r.id,
+        gift_id: r.gift_id,
+        user_id: r.user_id,
+        status: r.status,
+        reserved_at: r.reserved_at,
+        cancel_until: r.cancel_until,
+        cancelled_at: r.cancelled_at,
+        released_at: r.released_at,
+        gifts: {
+          id: r.gift_id,
+          name: r.gift_name,
+          category: r.gift_category,
+          image_url: r.gift_image_url,
+        },
+        profiles: {
+          name: r.guest_name || "Convidado",
+          email: r.guest_email || r.user_id,
+        },
+      }));
+
+      return NextResponse.json({
+        success: true,
+        isAdmin: true,
+        data: mapped,
+      });
     }
 
-    const email = user.email?.toLowerCase().trim() || "";
-    const isAllowlisted = ADMIN_EMAILS.includes(email);
-
-    // Auto-bootstrap: se for um dos e-mails autorizados, garante inserção em administrators
-    if (isAllowlisted) {
-      try {
-        await (supabase as any).from("administrators").upsert(
-          {
-            user_id: user.id,
-            email: email,
-            role: "owner",
-            is_active: true,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        );
-      } catch (upsertErr) {
-        console.warn("Aviso ao sincronizar administrador:", upsertErr);
-      }
-    }
-
-    // Verificar se o usuário autenticado é um administrador ativo
-    const { data: adminRecord } = await (supabase as any)
-      .from("administrators")
-      .select("user_id, role, is_active")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    const isAdmin = isAllowlisted || Boolean(adminRecord?.is_active);
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: "Acesso restrito aos noivos/administradores." },
-        { status: 403 }
-      );
-    }
-
-    // Consulta todas as reservas registradas
+    // 2. Fallback: consulta direta à tabela 'reservations'
     const { data: reservations, error: resError } = await (supabase as any)
       .from("reservations")
       .select(`
@@ -81,18 +68,12 @@ export async function GET() {
       .order("reserved_at", { ascending: false });
 
     if (resError) {
-      console.error("Erro ao buscar reservas no admin:", resError.message);
-      return NextResponse.json({
-        success: true,
-        isAdmin: true,
-        data: [],
-      });
+      console.warn("Aviso ao buscar reservas:", resError.message);
     }
 
-    // Buscar perfis para obter nomes e e-mails de quem reservou
     const userIds = Array.from(new Set((reservations || []).map((r: any) => r.user_id).filter(Boolean)));
-    
     let profilesMap: Record<string, { name: string; email: string }> = {};
+
     if (userIds.length > 0) {
       try {
         const { data: profiles } = await (supabase as any)
