@@ -297,12 +297,10 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setReservations((prev) =>
-          prev.map((r) => (r.id === reservationId ? { ...r, status: "released_by_admin" } : r))
-        );
         setReleasingId(null);
+        await loadData();
       } else {
-        alert(data.message || "Erro ao liberar reserva.");
+        alert(data.error || data.message || "Erro ao liberar reserva.");
       }
     } catch {
       alert("Erro de conexão ao liberar reserva.");

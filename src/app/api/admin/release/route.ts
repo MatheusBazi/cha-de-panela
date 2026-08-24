@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Tentar primeiro via RPC
+    // 1. Executar liberação via RPC
     const { data: rpcResult, error: rpcError } = await (supabase.rpc as any)("admin_release_reservation", {
       p_reservation_id: reservationId,
     });
@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. Fallback direto de update no banco garantindo a liberação
-    const { error: updateErr } = await (supabase as any)
+    // 2. Fallback direto de update no banco garantindo a liberação e checando retorno
+    const { data: updatedRows, error: updateErr } = await (supabase as any)
       .from("reservations")
       .update({
         status: "released_by_admin",
@@ -90,12 +90,25 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", reservationId)
-      .eq("status", "active");
+      .select("id, status");
 
     if (updateErr) {
       console.error("Erro no update de liberação:", updateErr.message);
       return NextResponse.json(
         { success: false, error: updateErr.message },
+        { status: 400 }
+      );
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      if (rpcResult?.message) {
+        return NextResponse.json(
+          { success: false, error: rpcResult.message },
+          { status: 403 }
+        );
+      }
+      return NextResponse.json(
+        { success: false, error: "Não foi possível atualizar o registro no banco de dados." },
         { status: 400 }
       );
     }
