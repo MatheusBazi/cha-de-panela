@@ -13,7 +13,23 @@ export interface PublicGift {
   is_active?: boolean;
 }
 
-// 69 presentes oficiais organizados pelas 8 categorias do CEO
+export function normalizeCategory(category: string | null | undefined): string {
+  if (!category) return "Cozinha";
+  const trimmed = category.trim();
+  const lower = trimmed.toLowerCase();
+  if (
+    trimmed === "Mesa e Servir" ||
+    trimmed === "Café e Café da Manhã" ||
+    lower.includes("mesa e servir") ||
+    lower.includes("café") ||
+    lower.includes("cafe")
+  ) {
+    return "Cozinha";
+  }
+  return trimmed;
+}
+
+// 69 presentes oficiais organizados por categorias (Mesa e Servir + Café unificadas em Cozinha)
 export const REAL_GIFTS: PublicGift[] = [
   // --- 1. ITENS MAIS PEDIDOS ---
   {
@@ -355,13 +371,13 @@ export const REAL_GIFTS: PublicGift[] = [
     is_active: true,
   },
 
-  // --- 3. MESA E SERVIR ---
+  // --- 3. MESA E SERVIR (AGORA EM COZINHA) ---
   {
     id: "g-mes-01",
     slug: "aparelho-de-jantar",
     name: "Aparelho de jantar",
     description: "Conjunto completo de pratos e xícaras para nossas refeições em família.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -375,7 +391,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "pratos-rasos-fundos-sobremesa",
     name: "Pratos rasos, fundos e de sobremesa",
     description: "Pratos em cerâmica artesanal em tons neutros.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -389,7 +405,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "copos",
     name: "Copos",
     description: "Conjunto de copos de vidro para o dia a dia.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -403,7 +419,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "tacas",
     name: "Taças",
     description: "Conjunto de taças de cristal ecológico para celebrações.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -417,7 +433,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "xicaras-e-pires",
     name: "Xícaras e pires",
     description: "Conjunto de xícaras para café e chá da tarde.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -431,7 +447,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "talheres",
     name: "Talheres",
     description: "Faqueiro completo em aço inox com acabamento polido.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -445,7 +461,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "travessas",
     name: "Travessas",
     description: "Travessas refratárias para servir à mesa.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -459,7 +475,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "petisqueiras",
     name: "Petisqueiras",
     description: "Petisqueiras com divisórias em madeira ou cerâmica.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -473,7 +489,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "jogo-americano",
     name: "Jogo americano",
     description: "Conjunto de jogos americanos em linho ou fibra natural.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -487,7 +503,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "toalha-de-mesa",
     name: "Toalha de mesa",
     description: "Toalha de mesa em tecido natural com toque suave.",
-    category: "Mesa e Servir",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -497,13 +513,13 @@ export const REAL_GIFTS: PublicGift[] = [
     is_active: true,
   },
 
-  // --- 4. CAFÉ E CAFÉ DA MANHÃ ---
+  // --- 4. CAFÉ E CAFÉ DA MANHÃ (AGORA EM COZINHA) ---
   {
     id: "g-caf-01",
     slug: "garrafa-termica",
     name: "Garrafa térmica",
     description: "Garrafa térmica com excelente retenção de calor e design retrô.",
-    category: "Café e Café da Manhã",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -517,7 +533,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "acucareiro",
     name: "Açucareiro",
     description: "Açucareiro em cerâmica com colherzinha dosadora.",
-    category: "Café e Café da Manhã",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -531,7 +547,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "bule",
     name: "Bule",
     description: "Bule para servir café e chá à mesa.",
-    category: "Café e Café da Manhã",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -545,7 +561,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "porta-filtro-de-cafe",
     name: "Porta-filtro de café",
     description: "Suporte coador em cerâmica ou acrílico para café passado na hora.",
-    category: "Café e Café da Manhã",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,
@@ -559,7 +575,7 @@ export const REAL_GIFTS: PublicGift[] = [
     slug: "bandeja-para-servir",
     name: "Bandeja para servir",
     description: "Bandeja em madeira clara ou bambu com alças.",
-    category: "Café e Café da Manhã",
+    category: "Cozinha",
     image_url: null,
     external_url: null,
     external_note: null,

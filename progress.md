@@ -11,6 +11,6 @@
 - [x] **Testes Automatizados:** 61/61 testes aprovados (14 Admin CRUD + 14 E2E + 16 Catálogo + 17 Auth).
 - [x] **Build de Produção:** Next.js 15 compilado com sucesso e servidor ativo em `localhost:3000`.
 
-### 2. Bloqueio Atual
-- **Fase 14 (Deploy em Produção):** Parada obrigatória antes do deploy definitivo na Vercel.
-- Aguardando revisão final do **Arquiteto** e autorização do **CEO**.
+### 2. Status do Deploy
+- **Fase 14 (Deploy em Produção):** [x] Autorizado pelo usuário e enviado via `main` para publicação automática no ambiente de produção.
+

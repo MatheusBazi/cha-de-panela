@@ -174,7 +174,25 @@ export default function HomePage() {
                 </div>
                 <div className="text-left sm:text-center flex-1">
                   <span className="font-medium text-[11px] text-[#8C8073] uppercase tracking-wider block">Local</span>
-                  <p className="font-serif font-medium text-[#493E33] text-base sm:text-lg">Local em breve</p>
+                  <p className="font-serif font-medium text-[#493E33] text-sm sm:text-base leading-snug">
+                    Condomínio Residencial Aricanduva
+                  </p>
+                  <p className="text-xs text-[#6B5D4E] mt-0.5">
+                    Avenida Aricanduva, 8256
+                  </p>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=Avenida+Aricanduva%2C+8256+-+Condom%C3%ADnio+Residencial+Aricanduva"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-[#73795B] hover:text-[#565B43] underline underline-offset-2 mt-1.5 transition-colors font-medium"
+                  >
+                    <span>Ver no mapa</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </a>
                 </div>
               </div>
             </div>

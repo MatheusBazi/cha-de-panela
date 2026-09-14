@@ -684,8 +684,6 @@ export default function AdminPage() {
                 >
                   <option value="Itens mais pedidos">Itens mais pedidos</option>
                   <option value="Cozinha">Cozinha</option>
-                  <option value="Mesa e Servir">Mesa e Servir</option>
-                  <option value="Café e Café da Manhã">Café e Café da Manhã</option>
                   <option value="Limpeza">Limpeza</option>
                   <option value="Quarto e Banheiro">Quarto e Banheiro</option>
                   <option value="Organização">Organização</option>

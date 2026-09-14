@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { REAL_GIFTS } from "@/lib/catalog/fixtures";
+import { REAL_GIFTS, normalizeCategory } from "@/lib/catalog/fixtures";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +62,12 @@ export async function GET() {
       return NextResponse.json({ success: true, data: REAL_GIFTS });
     }
 
-    return NextResponse.json({ success: true, data: gifts });
+    const sanitized = gifts.map((g: any) => ({
+      ...g,
+      category: normalizeCategory(g.category),
+    }));
+
+    return NextResponse.json({ success: true, data: sanitized });
   } catch {
     return NextResponse.json({ success: true, data: REAL_GIFTS });
   }
@@ -91,11 +96,13 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
+    const finalCategory = normalizeCategory(category);
+
     const { data: newGift, error: insertError } = await (auth.supabase as any)
       .from("gifts")
       .insert({
         name: name.trim(),
-        category: category.trim(),
+        category: finalCategory,
         description: description?.trim() || "",
         slug: normalizedSlug,
         image_url: image_url || null,
@@ -134,11 +141,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Nome do presente é obrigatório." }, { status: 400 });
     }
 
+    const finalCategory = normalizeCategory(category);
+
     const { data: updatedGift, error: updateError } = await (auth.supabase as any)
       .from("gifts")
       .update({
         name: name.trim(),
-        category: category?.trim(),
+        category: finalCategory,
         description: description?.trim() || "",
         slug: slug?.trim(),
         image_url: image_url || null,

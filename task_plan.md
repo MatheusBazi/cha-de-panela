@@ -90,4 +90,4 @@
 
 ### Fase 14 — Deploy Definitivo em Produção
 - **Objetivo:** Publicação em domínio de produção (Vercel) e abertura oficial aos convidados.
-- **Status:** [ ] BLOQUEADA — **PARE.** Aguardando autorização final do Arquiteto e do CEO.
+- **Status:** [x] CONCLUÍDA — Deploy acionado com push na branch `main` do repositório GitHub.

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeCategory } from "@/lib/catalog/fixtures";
 
 export const dynamic = "force-dynamic";
 
@@ -47,9 +48,19 @@ export async function GET() {
       });
     }
 
+    const sanitizedReservations = (reservations || []).map((r: any) => ({
+      ...r,
+      gifts: r.gifts
+        ? {
+            ...r.gifts,
+            category: normalizeCategory(r.gifts.category),
+          }
+        : null,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: reservations || [],
+      data: sanitizedReservations,
     });
   } catch (err: unknown) {
     console.error("Erro na rota /api/reservations/my:", err);
