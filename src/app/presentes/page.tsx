@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { REAL_GIFTS, type PublicGift } from "@/lib/catalog/fixtures";
+import { REAL_GIFTS, normalizeCategory, type PublicGift } from "@/lib/catalog/fixtures";
 
 function SearchIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
@@ -39,12 +39,27 @@ export default function CatalogPage() {
       if (!res.ok) throw new Error(`Falha ao obter lista (HTTP ${res.status})`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-        setGifts(json.data);
+        setGifts(
+          json.data.map((g: PublicGift) => ({
+            ...g,
+            category: normalizeCategory(g.category),
+          }))
+        );
       } else {
-        setGifts(REAL_GIFTS);
+        setGifts(
+          REAL_GIFTS.map((g) => ({
+            ...g,
+            category: normalizeCategory(g.category),
+          }))
+        );
       }
     } catch {
-      setGifts(REAL_GIFTS);
+      setGifts(
+        REAL_GIFTS.map((g) => ({
+          ...g,
+          category: normalizeCategory(g.category),
+        }))
+      );
     } finally {
       setLoading(false);
     }
@@ -57,7 +72,8 @@ export default function CatalogPage() {
   const categories = useMemo(() => {
     const set = new Set<string>();
     gifts.forEach((g) => {
-      if (g.category) set.add(g.category);
+      const cat = normalizeCategory(g.category);
+      if (cat) set.add(cat);
     });
     return ["Todos", ...Array.from(set).sort()];
   }, [gifts]);
