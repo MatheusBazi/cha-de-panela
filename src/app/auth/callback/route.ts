@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   if (exchangeError) {
     console.error("Erro ao trocar código de autorização por sessão:", exchangeError.message);
     const sanitizedMsg = encodeURIComponent(exchangeError.message);
-    return NextResponse.redirect(new URL(`/?auth_error=${sanitizedMsg}`, requestUrl.origin));
+    return NextResponse.redirect(new URL(`/?auth_error=${sanitizedMsg}`, origin));
   }
 
   // BOOTSTRAP DE ADMINISTRADORES AUTORIZADOS
