@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { publicImageUrl } from "@/lib/catalog/images";
 import { REAL_GIFTS, normalizeCategory, type PublicGift } from "@/lib/catalog/fixtures";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ export async function GET() {
     // Normaliza as categorias (unificando Mesa e Servir + Café em Cozinha)
     const giftsToReturn = rawGifts.map((g) => ({
       ...g,
+      image_url: publicImageUrl(g.id, g.image_url) as string,
       category: normalizeCategory(g.category),
     }));
 

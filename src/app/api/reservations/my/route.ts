@@ -1,3 +1,4 @@
+import { publicImageUrl } from "@/lib/catalog/images";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeCategory } from "@/lib/catalog/fixtures";
@@ -53,6 +54,7 @@ export async function GET() {
       gifts: r.gifts
         ? {
             ...r.gifts,
+            image_url: publicImageUrl(r.gifts.id, r.gifts.image_url),
             category: normalizeCategory(r.gifts.category),
           }
         : null,
